@@ -1,0 +1,1507 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>마비노기 모바일 직업 추천</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #2c1810 0%, #4a2c1a 50%, #2c1810 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image:
+                radial-gradient(circle at 20% 50%, rgba(255, 200, 100, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(139, 69, 19, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: linear-gradient(to bottom, #fffaf0 0%, #fff8dc 100%);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 30px rgba(255, 200, 100, 0.3);
+            overflow: hidden;
+            border: 3px solid #d4a574;
+            position: relative;
+        }
+
+        header {
+            background: linear-gradient(135deg, #8b4513 0%, #d2691e 50%, #8b4513 100%);
+            color: #fff8dc;
+            padding: 30px;
+            text-align: center;
+            border-bottom: 3px solid #d4a574;
+            box-shadow: inset 0 -10px 20px rgba(0, 0, 0, 0.2);
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            color: #fffacd;
+            font-weight: bold;
+        }
+
+        .subtitle {
+            font-size: 1.1em;
+            opacity: 0.95;
+            color: #ffefd5;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 60px;
+            font-size: 1.3em;
+            color: #8b4513;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #d2691e;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .main-content {
+            padding: 30px;
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+
+        .section-title {
+            font-size: 1.8em;
+            color: #8b4513;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #d4a574;
+            text-shadow: 1px 1px 2px rgba(139, 69, 19, 0.2);
+        }
+
+        .rune-type-container {
+            margin-bottom: 30px;
+        }
+
+        .rune-type-title {
+            font-size: 1.3em;
+            color: #d2691e;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .rune-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 10px;
+        }
+
+        .rune-item {
+            background: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .rune-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .rune-item.selected {
+            background: linear-gradient(135deg, #d2691e 0%, #8b4513 100%);
+            border-color: #d4a574;
+            color: #fffacd;
+            font-weight: bold;
+            box-shadow: 0 0 15px rgba(210, 105, 30, 0.6);
+        }
+
+        /* 룬 타입별 색상 구분 */
+        .rune-item[data-rune-type="WEAPON"]:not(.selected) {
+            background: #ffe4e1;
+            border-color: #ff8a80;
+        }
+
+        .rune-item[data-rune-type="ARMOR"]:not(.selected) {
+            background: #e3f2fd;
+            border-color: #90caf9;
+        }
+
+        .rune-item[data-rune-type="EMBLEM"]:not(.selected) {
+            background: #f3e5f5;
+            border-color: #ce93d8;
+        }
+
+        .rune-item[data-rune-type="ACC"]:not(.selected) {
+            background: #fff3e0;
+            border-color: #ffb74d;
+        }
+
+        .rune-item.legend {
+            border-left: 4px solid #ffd700;
+        }
+
+        .rune-item.mythic {
+            border-left: 4px solid #ff4500;
+        }
+
+        .rune-name {
+            font-size: 0.9em;
+            word-break: keep-all;
+        }
+
+        .rune-grade {
+            font-size: 0.7em;
+            margin-top: 4px;
+            opacity: 0.7;
+        }
+
+        .selected .rune-grade {
+            opacity: 1;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 30px 0;
+        }
+
+        .btn {
+            padding: 15px 40px;
+            font-size: 1.1em;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #d2691e 0%, #8b4513 100%);
+            color: #fffacd;
+            border: 2px solid #d4a574;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(210, 105, 30, 0.6);
+            background: linear-gradient(135deg, #e67e22 0%, #a0522d 100%);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #8b7355 0%, #6b5d50 100%);
+            color: #fff8dc;
+            border: 2px solid #a0826d;
+        }
+
+        .btn-secondary:hover {
+            background: linear-gradient(135deg, #a0826d 0%, #7d6e5d 100%);
+            box-shadow: 0 5px 15px rgba(139, 115, 85, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .results {
+            background: linear-gradient(to bottom, #fff8dc 0%, #faebd7 100%);
+            border-radius: 15px;
+            padding: 30px;
+            margin-top: 30px;
+            border: 2px solid #d4a574;
+            box-shadow: 0 5px 15px rgba(139, 69, 19, 0.2);
+        }
+
+        .results-title {
+            font-size: 1.5em;
+            color: #8b4513;
+            margin-bottom: 20px;
+            text-align: center;
+            text-shadow: 1px 1px 2px rgba(139, 69, 19, 0.2);
+        }
+
+        .job-result {
+            background: linear-gradient(to bottom, #fffaf0 0%, #fff8dc 100%);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 5px solid #d2691e;
+            border: 2px solid #d4a574;
+            transition: all 0.3s ease;
+            box-shadow: 0 3px 10px rgba(139, 69, 19, 0.15);
+        }
+
+        .job-result:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 15px rgba(210, 105, 30, 0.3);
+        }
+
+        .job-result.top-result {
+            border-left-color: #ffd700;
+            background: linear-gradient(90deg, #fffacd 0%, #fff8dc 100%);
+            border: 3px solid #ffd700;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+        }
+
+        .job-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .job-name {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #8b4513;
+            text-shadow: 1px 1px 2px rgba(139, 69, 19, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .stats-link {
+            font-size: 0.8em;
+            text-decoration: none;
+            padding: 5px 10px;
+            background: linear-gradient(135deg, #d2691e 0%, #8b4513 100%);
+            border-radius: 8px;
+            border: 2px solid #d4a574;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(139, 69, 19, 0.3);
+        }
+
+        .stats-link:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 10px rgba(210, 105, 30, 0.5);
+        }
+
+        .job-score {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #d2691e;
+            text-shadow: 1px 1px 2px rgba(210, 105, 30, 0.3);
+        }
+
+        .top-result .job-score {
+            color: #daa520;
+            text-shadow: 1px 1px 3px rgba(218, 165, 32, 0.5);
+        }
+
+        .job-details {
+            font-size: 0.95em;
+            color: #6b5d50;
+            line-height: 1.6;
+        }
+
+        .matched-runes {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #d4a574;
+        }
+
+        .matched-runes-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #d2691e;
+        }
+
+        .rune-tag {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 0.85em;
+            margin: 3px;
+        }
+
+        .rune-tag-weapon {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .rune-tag-armor {
+            background: #4dabf7;
+            color: white;
+        }
+
+        .rune-tag-emblem {
+            background: #b197fc;
+            color: white;
+        }
+
+        .rune-tag-acc {
+            background: #ff922b;
+            color: white;
+        }
+
+        .cache-info {
+            text-align: center;
+            padding: 15px;
+            background: linear-gradient(to right, #fff8dc 0%, #faebd7 50%, #fff8dc 100%);
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 0.9em;
+            color: #8b4513;
+            border: 1px solid #d4a574;
+        }
+
+        .cache-info a {
+            color: #d2691e;
+            text-decoration: underline;
+            font-weight: bold;
+        }
+
+        .cache-info a:hover {
+            color: #a0522d;
+        }
+
+        .selected-count {
+            text-align: center;
+            font-size: 1.1em;
+            color: #d2691e;
+            margin: 20px 0;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(210, 105, 30, 0.2);
+        }
+
+        .filter-toggle {
+            text-align: center;
+            margin: 15px 0;
+        }
+
+        .toggle-btn {
+            padding: 10px 25px;
+            font-size: 0.95em;
+            border: 2px solid #d2691e;
+            background: linear-gradient(to bottom, #fffaf0 0%, #fff8dc 100%);
+            color: #8b4513;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+
+        .toggle-btn:hover {
+            background: linear-gradient(to bottom, #fff8dc 0%, #faebd7 100%);
+            box-shadow: 0 3px 10px rgba(210, 105, 30, 0.3);
+        }
+
+        .toggle-btn.active {
+            background: linear-gradient(135deg, #d2691e 0%, #8b4513 100%);
+            color: #fffacd;
+            border-color: #d4a574;
+            box-shadow: 0 0 15px rgba(210, 105, 30, 0.5);
+        }
+
+        .rune-item.hidden {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.8em;
+            }
+
+            .rune-grid {
+                grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+                gap: 8px;
+            }
+
+            .main-content {
+                padding: 15px;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+
+            .rune-item {
+                padding: 8px;
+            }
+
+            .rune-name {
+                font-size: 0.85em;
+            }
+
+            .rune-grade {
+                font-size: 0.65em;
+            }
+        }
+
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 4px solid #c33;
+        }
+
+        .search-note {
+            max-width: 600px;
+            margin: 20px auto 10px;
+            padding: 10px 15px;
+            background: linear-gradient(to right, #fffacd 0%, #fff8dc 100%);
+            border-left: 4px solid #daa520;
+            border-radius: 5px;
+            font-size: 0.9em;
+            color: #8b4513;
+            line-height: 1.5;
+            border: 1px solid #d4a574;
+            box-shadow: 0 2px 5px rgba(139, 69, 19, 0.15);
+        }
+
+        .search-container {
+            position: relative;
+            max-width: 600px;
+            margin: 0 auto 20px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 15px 50px 15px 20px;
+            font-size: 1.1em;
+            border: 2px solid #d2691e;
+            border-radius: 10px;
+            outline: none;
+            transition: all 0.3s ease;
+            background: linear-gradient(to bottom, #fffaf0 0%, #fff 100%);
+        }
+
+        .search-input:focus {
+            border-color: #8b4513;
+            box-shadow: 0 0 15px rgba(210, 105, 30, 0.4);
+            background: #fffaf0;
+        }
+
+        .search-clear {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: linear-gradient(135deg, #8b7355 0%, #6b5d50 100%);
+            color: #fff8dc;
+            border: 1px solid #a0826d;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            font-size: 1.2em;
+            line-height: 1;
+            display: none;
+        }
+
+        .search-clear:hover {
+            background: linear-gradient(135deg, #a0826d 0%, #7d6e5d 100%);
+            box-shadow: 0 2px 8px rgba(139, 115, 85, 0.4);
+        }
+
+        .search-clear.visible {
+            display: block;
+        }
+
+        .autocomplete-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to bottom, #fffaf0 0%, #fff8dc 100%);
+            border: 2px solid #d2691e;
+            border-top: none;
+            border-radius: 0 0 10px 10px;
+            max-height: 400px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 5px 15px rgba(139, 69, 19, 0.3);
+        }
+
+        .autocomplete-dropdown.visible {
+            display: block;
+        }
+
+        .autocomplete-item {
+            padding: 12px 20px;
+            cursor: pointer;
+            border-bottom: 1px solid #d4a574;
+            transition: all 0.2s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .autocomplete-item:last-child {
+            border-bottom: none;
+        }
+
+        .autocomplete-item:hover,
+        .autocomplete-item.active {
+            background: linear-gradient(to right, #fff8dc 0%, #faebd7 100%);
+        }
+
+        .autocomplete-item.selected-item {
+            background: linear-gradient(90deg, #fffacd 0%, #fff8dc 100%);
+            border-left: 3px solid #d2691e;
+        }
+
+        .autocomplete-type {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 5px;
+            font-size: 0.85em;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .autocomplete-type.weapon {
+            background: #ffe4e1;
+            color: #c62828;
+        }
+
+        .autocomplete-type.armor {
+            background: #e3f2fd;
+            color: #1565c0;
+        }
+
+        .autocomplete-type.emblem {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+
+        .autocomplete-type.acc {
+            background: #fff3e0;
+            color: #e65100;
+        }
+
+        .autocomplete-name {
+            flex: 1;
+            font-size: 1em;
+        }
+
+        .autocomplete-status {
+            font-size: 0.85em;
+            color: #d2691e;
+            font-weight: bold;
+        }
+
+        .no-results {
+            padding: 20px;
+            text-align: center;
+            color: #8b7355;
+        }
+
+        @media (max-width: 768px) {
+            .search-input {
+                font-size: 1em;
+                padding: 12px 45px 12px 15px;
+            }
+
+            .autocomplete-dropdown {
+                max-height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>마비노기 모바일 직업 추천</h1>
+            <p class="subtitle">보유한 룬으로 적합한 직업 추천</p>
+        </header>
+
+        <div id="app" class="main-content">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>데이터를 불러오는 중입니다...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 전역 상태 관리
+        const AppState = {
+            classes: [],
+            weapons: [],
+            armors: [],
+            emblems: [],
+            accessories: [],
+            statistics: [],
+            selectedRunes: new Set(),
+            cacheTimestamp: null,
+            allRunes: [],
+            searchResults: [],
+            activeResultIndex: -1,
+            showSelectedOnly: false
+        };
+
+        // LocalStorage 캐싱 관리
+        const CacheManager = {
+            CACHE_KEY: 'runeRecommendationCache',
+            SELECTED_RUNES_KEY: 'selectedRunes',
+            CACHE_DURATION: 24 * 60 * 60 * 1000, // 24시간
+
+            saveCache(data) {
+                const cacheData = {
+                    timestamp: Date.now(),
+                    data: data
+                };
+                localStorage.setItem(this.CACHE_KEY, JSON.stringify(cacheData));
+            },
+
+            loadCache() {
+                try {
+                    const cached = localStorage.getItem(this.CACHE_KEY);
+                    if (!cached) return null;
+
+                    const cacheData = JSON.parse(cached);
+                    const age = Date.now() - cacheData.timestamp;
+
+                    if (age > this.CACHE_DURATION) {
+                        localStorage.removeItem(this.CACHE_KEY);
+                        return null;
+                    }
+
+                    return cacheData;
+                } catch (e) {
+                    console.error('캐시 로드 실패:', e);
+                    return null;
+                }
+            },
+
+            clearCache() {
+                localStorage.removeItem(this.CACHE_KEY);
+            },
+
+            saveSelectedRunes(selectedRunes) {
+                try {
+                    const runesArray = Array.from(selectedRunes);
+                    localStorage.setItem(this.SELECTED_RUNES_KEY, JSON.stringify(runesArray));
+                } catch (e) {
+                    console.error('선택된 룬 저장 실패:', e);
+                }
+            },
+
+            loadSelectedRunes() {
+                try {
+                    const saved = localStorage.getItem(this.SELECTED_RUNES_KEY);
+                    if (!saved) return new Set();
+                    const runesArray = JSON.parse(saved);
+                    return new Set(runesArray);
+                } catch (e) {
+                    console.error('선택된 룬 로드 실패:', e);
+                    return new Set();
+                }
+            }
+        };
+
+        // API 데이터 로드
+        async function loadAllData() {
+            const cached = CacheManager.loadCache();
+
+            if (cached) {
+                console.log('캐시된 데이터 사용');
+                AppState.cacheTimestamp = cached.timestamp;
+                return cached.data;
+            }
+
+            console.log('API에서 새 데이터 로드');
+
+            const [classesRes, weaponsRes, armorsRes, emblemsRes, accessoriesRes, statsRes] = await Promise.all([
+                fetch('https://api.m-inbody.info/api/v1/rankings/classes'),
+                fetch('https://api.m-inbody.info/api/v1/items/type/WEAPON?season=1'),
+                fetch('https://api.m-inbody.info/api/v1/items/type/ARMOR?season=1'),
+                fetch('https://api.m-inbody.info/api/v1/items/type/EMBLEM?season=1'),
+                fetch('https://api.m-inbody.info/api/v1/items/type/ACC?season=1'),
+                fetch('https://api.m-inbody.info/api/v1/user_records/statistics?season=1')
+            ]);
+
+            const [classes, weapons, armors, emblems, accessories, stats] = await Promise.all([
+                classesRes.json(),
+                weaponsRes.json(),
+                armorsRes.json(),
+                emblemsRes.json(),
+                accessoriesRes.json(),
+                statsRes.json()
+            ]);
+
+            const data = {
+                classes: classes.data.classes,
+                weapons: weapons.data,
+                armors: armors.data,
+                emblems: emblems.data,
+                accessories: accessories.data,
+                statistics: stats.data.statistics
+            };
+
+            CacheManager.saveCache(data);
+            AppState.cacheTimestamp = Date.now();
+
+            return data;
+        }
+
+        // 룬 선택/해제
+        function toggleRune(runeId) {
+            if (AppState.selectedRunes.has(runeId)) {
+                AppState.selectedRunes.delete(runeId);
+            } else {
+                AppState.selectedRunes.add(runeId);
+            }
+            CacheManager.saveSelectedRunes(AppState.selectedRunes);
+            updateSelectedCount();
+            updateRuneUI(runeId);
+
+            // 선택된 룬만 보기 모드일 때 필터 재적용
+            if (AppState.showSelectedOnly) {
+                applyRuneFilter();
+            }
+        }
+
+        // 선택된 룬 개수 업데이트
+        function updateSelectedCount() {
+            const countElement = document.getElementById('selectedCount');
+            if (countElement) {
+                countElement.textContent = `선택된 룬: ${AppState.selectedRunes.size}개`;
+            }
+        }
+
+        // 룬 UI 업데이트
+        function updateRuneUI(runeId) {
+            // 메인 목록의 룬 업데이트
+            const runeElements = document.querySelectorAll(`[data-rune-id="${runeId}"]`);
+            runeElements.forEach(runeElement => {
+                if (runeElement.classList.contains('rune-item')) {
+                    // 메인 목록의 룬 아이템
+                    if (AppState.selectedRunes.has(runeId)) {
+                        runeElement.classList.add('selected');
+                    } else {
+                        runeElement.classList.remove('selected');
+                    }
+                }
+            });
+        }
+
+        // 모든 룬 선택 해제
+        function clearSelection() {
+            AppState.selectedRunes.clear();
+            CacheManager.saveSelectedRunes(AppState.selectedRunes);
+            document.querySelectorAll('.rune-item.selected').forEach(el => {
+                el.classList.remove('selected');
+            });
+            updateSelectedCount();
+            clearResults();
+
+            // 선택된 룬만 보기 모드 해제
+            if (AppState.showSelectedOnly) {
+                AppState.showSelectedOnly = false;
+                const toggleBtn = document.getElementById('toggleSelectedBtn');
+                if (toggleBtn) {
+                    toggleBtn.classList.remove('active');
+                    toggleBtn.textContent = '선택된 룬만 보기';
+                }
+                applyRuneFilter();
+            }
+        }
+
+        // 결과 지우기
+        function clearResults() {
+            const resultsElement = document.getElementById('results');
+            if (resultsElement) {
+                resultsElement.remove();
+            }
+        }
+
+        // 직업 추천 알고리즘
+        function calculateRecommendations() {
+            if (AppState.selectedRunes.size === 0) {
+                alert('최소 1개 이상의 룬을 선택해주세요.');
+                return;
+            }
+
+            const jobScores = AppState.statistics.map(jobStat => {
+                let matchCount = 0;
+                let totalPercentage = 0;
+                let weightedScore = 0;
+                const matchedRunes = [];
+
+                // 타입별 장착 가능한 최대 개수
+                const maxRunesByType = {
+                    'WEAPON': 1,
+                    'ARMOR': 6,
+                    'EMBLEM': 1,
+                    'ACC': 3
+                };
+
+                // 타입별 매칭된 룬 개수 카운터
+                const runeCountByType = {
+                    'WEAPON': 0,
+                    'ARMOR': 0,
+                    'EMBLEM': 0,
+                    'ACC': 0
+                };
+
+                // 각 타입별 룬 확인
+                jobStat.itemStatisticsByType.forEach(typeStats => {
+                    typeStats.items.forEach((item, index) => {
+                        if (AppState.selectedRunes.has(item.itemId)) {
+                            // AppState.allRunes에서 타입 정보 찾기
+                            const runeInfo = AppState.allRunes.find(r => r.id === item.itemId);
+                            const runeType = runeInfo ? runeInfo.type : typeStats.type;
+
+                            // 룬 타입별 순위 제한
+                            const rank = index + 1;
+                            if (runeType === 'WEAPON' && rank > 3) {
+                                return; // 3위 밖의 무기 룬은 제외
+                            }
+                            if (runeType === 'ARMOR' && rank > 9) {
+                                return; // 9위 밖의 방어구 룬은 제외
+                            }
+                            if (runeType === 'ACC' && rank > 3) {
+                                return; // 3위 밖의 장신구 룬은 제외
+                            }
+
+                            // 타입별 최대 장착 개수 제한
+                            if (runeCountByType[runeType] >= maxRunesByType[runeType]) {
+                                return; // 이미 최대 개수에 도달한 경우 제외
+                            }
+
+                            runeCountByType[runeType]++;
+                            matchCount++;
+                            totalPercentage += item.percentage;
+                            // 사용률을 가중치로 사용 (사용률이 높을수록 더 높은 점수)
+                            weightedScore += item.percentage * item.percentage;
+
+                            matchedRunes.push({
+                                name: item.itemName,
+                                percentage: item.percentage,
+                                count: item.count,
+                                type: runeType,
+                                rank: rank
+                            });
+                        }
+                    });
+                });
+
+                // 매칭된 룬을 타입 순서로 정렬 (무기, 방어구, 장신구, 앰블럼)
+                const typeOrder = { 'WEAPON': 1, 'ARMOR': 2, 'ACC': 3, 'EMBLEM': 4 };
+                matchedRunes.sort((a, b) => {
+                    if (typeOrder[a.type] !== typeOrder[b.type]) {
+                        return typeOrder[a.type] - typeOrder[b.type];
+                    }
+                    return b.percentage - a.percentage;
+                });
+
+                // 평균 순위 계산 (순위가 낮을수록 좋음)
+                const averageRank = matchCount > 0 ?
+                    matchedRunes.reduce((sum, rune) => sum + rune.rank, 0) / matchCount : 999;
+
+                // 해당 직업에서 자주 사용하는 룬 추출 (무기 1개, 방어구 6개, 장신구 3개, 앰블럼 1개)
+                const popularRunes = [];
+                jobStat.itemStatisticsByType.forEach(typeStats => {
+                    const runeInfo = AppState.allRunes.find(r => r.id === typeStats.items[0]?.itemId);
+                    const runeType = runeInfo ? runeInfo.type : typeStats.type;
+
+                    let limit = 0;
+                    if (runeType === 'WEAPON') limit = 1;
+                    else if (runeType === 'ARMOR') limit = 6;
+                    else if (runeType === 'ACC') limit = 3;
+                    else if (runeType === 'EMBLEM') limit = 1;
+
+                    typeStats.items.slice(0, limit).forEach((item, index) => {
+                        popularRunes.push({
+                            name: item.itemName,
+                            percentage: item.percentage,
+                            type: runeType,
+                            rank: index + 1
+                        });
+                    });
+                });
+
+                // 인기 룬도 타입 순서로 정렬
+                popularRunes.sort((a, b) => {
+                    if (typeOrder[a.type] !== typeOrder[b.type]) {
+                        return typeOrder[a.type] - typeOrder[b.type];
+                    }
+                    return b.percentage - a.percentage;
+                });
+
+                return {
+                    job: jobStat.job,
+                    matchCount: matchCount,
+                    totalPercentage: totalPercentage,
+                    averagePercentage: matchCount > 0 ? totalPercentage / matchCount : 0,
+                    weightedScore: weightedScore,
+                    matchedRunes: matchedRunes,
+                    popularRunes: popularRunes,
+                    totalUsers: jobStat.totalUsers,
+                    averageRank: averageRank
+                };
+            });
+
+            // 정렬 기준:
+            // 1순위: 일치하는 룬 개수 (많을수록 좋음)
+            // 2순위: 평균 순위 (낮을수록 좋음)
+            // 3순위: 사용률 가중 점수 (높을수록 좋음)
+            jobScores.sort((a, b) => {
+                if (b.matchCount !== a.matchCount) {
+                    return b.matchCount - a.matchCount;
+                }
+                if (a.averageRank !== b.averageRank) {
+                    return a.averageRank - b.averageRank;
+                }
+                return b.weightedScore - a.weightedScore;
+            });
+
+            displayResults(jobScores.filter(job => job.matchCount > 0));
+        }
+
+        // 결과 표시
+        function displayResults(jobScores) {
+            clearResults();
+
+            // 결과를 버튼 바로 아래에 삽입
+            const actionButtons = document.querySelector('.action-buttons');
+
+            if (jobScores.length === 0) {
+                const resultsHTML = `
+                    <div class="results" id="results">
+                        <h2 class="results-title">추천 결과</h2>
+                        <div class="error-message">
+                            선택한 룬과 일치하는 직업을 찾을 수 없습니다.
+                        </div>
+                    </div>
+                `;
+                actionButtons.insertAdjacentHTML('afterend', resultsHTML);
+                return;
+            }
+
+            const resultsHTML = `
+                <div class="results" id="results">
+                    <h2 class="results-title">추천 직업 (상위 ${Math.min(5, jobScores.length)}개)</h2>
+                    ${jobScores.slice(0, 5).map((job, index) => `
+                        <div class="job-result ${index === 0 ? 'top-result' : ''}">
+                            <div class="job-header">
+                                <span class="job-name">
+                                    ${index + 1}. ${job.job}
+                                    ${index === 0 ? `<a href="https://www.m-inbody.info/settings?tab=statistics" target="_blank" class="btn btn-primary stats-link" title="통계 페이지로 이동">📊보러가기</a>` : ''}
+                                </span>
+                                <span class="job-score">${job.matchCount}개 일치</span>
+                            </div>
+                            <div class="job-details">
+                                <div>평균 순위: ${job.averageRank.toFixed(1)}위</div>
+                                <div>평균 사용률: ${job.averagePercentage.toFixed(2)}%</div>
+                                <div>총 사용자: ${job.totalUsers.toLocaleString()}명</div>
+                            </div>
+                            <div class="matched-runes">
+                                <div class="matched-runes-title">${job.job} 인기 룬:</div>
+                                ${job.popularRunes.map(rune => {
+                                    const typeClass = rune.type ? `rune-tag-${rune.type.toLowerCase()}` : '';
+                                    return `<span class="rune-tag ${typeClass}">${rune.name} [${rune.rank}위] (${rune.percentage.toFixed(1)}%)</span>`;
+                                }).join('')}
+                            </div>
+                            <div class="matched-runes">
+                                <div class="matched-runes-title">일치하는 룬:</div>
+                                ${job.matchedRunes.map(rune => {
+                                    const typeClass = rune.type ? `rune-tag-${rune.type.toLowerCase()}` : '';
+                                    return `<span class="rune-tag ${typeClass}">${rune.name} [${rune.rank}위] (${rune.percentage.toFixed(1)}%)</span>`;
+                                }).join('')}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+
+            actionButtons.insertAdjacentHTML('afterend', resultsHTML);
+        }
+
+        // 모든 룬 데이터 통합
+        function buildAllRunesArray() {
+            const allRunes = [];
+
+            const typeMap = {
+                'WEAPON': '무기',
+                'ARMOR': '방어구',
+                'EMBLEM': '앰블럼',
+                'ACC': '장신구'
+            };
+
+            AppState.weapons.forEach(rune => {
+                allRunes.push({
+                    id: rune.id,
+                    name: rune.name,
+                    type: rune.type,
+                    typeName: typeMap[rune.type],
+                    grade: rune.grade
+                });
+            });
+
+            AppState.armors.forEach(rune => {
+                allRunes.push({
+                    id: rune.id,
+                    name: rune.name,
+                    type: rune.type,
+                    typeName: typeMap[rune.type],
+                    grade: rune.grade
+                });
+            });
+
+            AppState.emblems.forEach(rune => {
+                allRunes.push({
+                    id: rune.id,
+                    name: rune.name,
+                    type: rune.type,
+                    typeName: typeMap[rune.type],
+                    grade: rune.grade
+                });
+            });
+
+            AppState.accessories.forEach(rune => {
+                allRunes.push({
+                    id: rune.id,
+                    name: rune.name,
+                    type: rune.type,
+                    typeName: typeMap[rune.type],
+                    grade: rune.grade
+                });
+            });
+
+            AppState.allRunes = allRunes;
+        }
+
+        // 검색 기능
+        function handleSearch(query) {
+            const searchInput = document.getElementById('searchInput');
+            const dropdown = document.getElementById('autocompleteDropdown');
+            const clearBtn = document.getElementById('searchClear');
+
+            if (!query || query.trim() === '') {
+                dropdown.classList.remove('visible');
+                clearBtn.classList.remove('visible');
+                AppState.searchResults = [];
+                AppState.activeResultIndex = -1;
+                return;
+            }
+
+            clearBtn.classList.add('visible');
+
+            const normalizedQuery = query.toLowerCase().trim();
+            const results = AppState.allRunes.filter(rune =>
+                rune.name.toLowerCase().includes(normalizedQuery)
+            ).slice(0, 10);
+
+            AppState.searchResults = results;
+            AppState.activeResultIndex = -1;
+
+            if (results.length === 0) {
+                dropdown.innerHTML = '<div class="no-results">검색 결과가 없습니다<br>사용하지 않거나 체단실 API에 존재하지 않는 룬입니다</div>';
+                dropdown.classList.add('visible');
+                return;
+            }
+
+            const html = results.map((rune, index) => {
+                const isSelected = AppState.selectedRunes.has(rune.id);
+                const typeClass = rune.type.toLowerCase();
+                return `
+                    <div class="autocomplete-item ${isSelected ? 'selected-item' : ''}"
+                         data-index="${index}"
+                         data-rune-id="${rune.id}">
+                        <div>
+                            <span class="autocomplete-type ${typeClass}">${rune.typeName}</span>
+                            <span class="autocomplete-name">${rune.name}</span>
+                        </div>
+                        <span class="autocomplete-status">${isSelected ? '선택됨' : ''}</span>
+                    </div>
+                `;
+            }).join('');
+
+            dropdown.innerHTML = html;
+            dropdown.classList.add('visible');
+
+            // 클릭 이벤트 추가
+            dropdown.querySelectorAll('.autocomplete-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const runeId = parseInt(item.dataset.runeId);
+                    selectRuneFromSearch(runeId);
+                });
+
+                item.addEventListener('mouseenter', () => {
+                    const index = parseInt(item.dataset.index);
+                    setActiveResult(index);
+                });
+            });
+        }
+
+        // 검색 결과에서 룬 선택
+        function selectRuneFromSearch(runeId) {
+            toggleRune(runeId);
+
+            // 검색 결과 업데이트
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput && searchInput.value) {
+                handleSearch(searchInput.value);
+            }
+        }
+
+        // 활성 결과 설정
+        function setActiveResult(index) {
+            const dropdown = document.getElementById('autocompleteDropdown');
+            const items = dropdown.querySelectorAll('.autocomplete-item');
+
+            items.forEach((item, i) => {
+                if (i === index) {
+                    item.classList.add('active');
+                } else {
+                    item.classList.remove('active');
+                }
+            });
+
+            AppState.activeResultIndex = index;
+        }
+
+        // 키보드 네비게이션
+        function handleKeyboard(event) {
+            const dropdown = document.getElementById('autocompleteDropdown');
+
+            if (!dropdown.classList.contains('visible')) {
+                return;
+            }
+
+            const results = AppState.searchResults;
+
+            if (results.length === 0) {
+                return;
+            }
+
+            switch(event.key) {
+                case 'ArrowDown':
+                    event.preventDefault();
+                    if (AppState.activeResultIndex < results.length - 1) {
+                        setActiveResult(AppState.activeResultIndex + 1);
+                        scrollToActiveItem();
+                    }
+                    break;
+
+                case 'ArrowUp':
+                    event.preventDefault();
+                    if (AppState.activeResultIndex > 0) {
+                        setActiveResult(AppState.activeResultIndex - 1);
+                        scrollToActiveItem();
+                    }
+                    break;
+
+                case 'Enter':
+                    event.preventDefault();
+                    if (AppState.activeResultIndex >= 0 && AppState.activeResultIndex < results.length) {
+                        const rune = results[AppState.activeResultIndex];
+                        selectRuneFromSearch(rune.id);
+                    }
+                    break;
+
+                case 'Escape':
+                    event.preventDefault();
+                    clearSearch();
+                    break;
+            }
+        }
+
+        // 활성 항목으로 스크롤
+        function scrollToActiveItem() {
+            const dropdown = document.getElementById('autocompleteDropdown');
+            const activeItem = dropdown.querySelector('.autocomplete-item.active');
+
+            if (activeItem) {
+                activeItem.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            }
+        }
+
+        // 검색 초기화
+        function clearSearch() {
+            const searchInput = document.getElementById('searchInput');
+            const dropdown = document.getElementById('autocompleteDropdown');
+            const clearBtn = document.getElementById('searchClear');
+
+            searchInput.value = '';
+            dropdown.classList.remove('visible');
+            clearBtn.classList.remove('visible');
+            AppState.searchResults = [];
+            AppState.activeResultIndex = -1;
+        }
+
+        // 선택된 룬만 보기 토글
+        function toggleSelectedOnly() {
+            AppState.showSelectedOnly = !AppState.showSelectedOnly;
+
+            const toggleBtn = document.getElementById('toggleSelectedBtn');
+            if (toggleBtn) {
+                if (AppState.showSelectedOnly) {
+                    toggleBtn.classList.add('active');
+                    toggleBtn.textContent = '전체 룬 보기';
+                } else {
+                    toggleBtn.classList.remove('active');
+                    toggleBtn.textContent = '선택된 룬만 보기';
+                }
+            }
+
+            applyRuneFilter();
+        }
+
+        // 룬 필터 적용
+        function applyRuneFilter() {
+            const allRuneItems = document.querySelectorAll('.rune-item');
+
+            allRuneItems.forEach(item => {
+                const runeId = parseInt(item.dataset.runeId);
+
+                if (AppState.showSelectedOnly) {
+                    if (AppState.selectedRunes.has(runeId)) {
+                        item.classList.remove('hidden');
+                    } else {
+                        item.classList.add('hidden');
+                    }
+                } else {
+                    item.classList.remove('hidden');
+                }
+            });
+
+            // 섹션 제목 업데이트 (선택된 룬 개수 표시)
+            if (AppState.showSelectedOnly) {
+                updateSectionCounts();
+            }
+        }
+
+        // 섹션별 선택된 룬 개수 업데이트
+        function updateSectionCounts() {
+            const sections = [
+                { title: '무기 룬', data: AppState.weapons },
+                { title: '방어구 룬', data: AppState.armors },
+                { title: '장신구 룬', data: AppState.accessories },
+                { title: '앰블럼 룬', data: AppState.emblems }
+            ];
+
+            document.querySelectorAll('.section-title').forEach((titleEl, index) => {
+                if (sections[index]) {
+                    const selectedCount = sections[index].data.filter(rune =>
+                        AppState.selectedRunes.has(rune.id)
+                    ).length;
+
+                    if (AppState.showSelectedOnly) {
+                        titleEl.textContent = `${sections[index].title} (선택: ${selectedCount}개)`;
+                    } else {
+                        titleEl.textContent = `${sections[index].title} (${sections[index].data.length}개)`;
+                    }
+                }
+            });
+        }
+
+        // UI 렌더링
+        function renderUI() {
+            const cacheAge = AppState.cacheTimestamp ?
+                Math.floor((Date.now() - AppState.cacheTimestamp) / 1000 / 60) : 0;
+
+            const cacheInfo = AppState.cacheTimestamp ?
+                `<div class="cache-info">캐시된 데이터 사용 중 (${cacheAge}분 전 저장됨) | <a href="#" onclick="event.preventDefault(); refreshData();">새로고침</a></div>` : '';
+
+            const html = `
+                ${cacheInfo}
+
+                <div class="search-note">
+                    💡 동일한 룬이 여러 건 조회될 경우 이름이 동일한 전 시즌 룬 이므로 모두 선택
+                </div>
+
+                <div class="search-container">
+                    <input type="text"
+                           id="searchInput"
+                           class="search-input"
+                           placeholder="룬 이름을 입력하세요 (예: 영웅, 분출, 압도)"
+                           autocomplete="off">
+                    <button id="searchClear" class="search-clear" onclick="clearSearch()">&times;</button>
+                    <div id="autocompleteDropdown" class="autocomplete-dropdown"></div>
+                </div>
+
+                <div class="selected-count" id="selectedCount">선택된 룬: 0개</div>
+
+                <div class="filter-toggle">
+                    <button id="toggleSelectedBtn" class="toggle-btn" onclick="toggleSelectedOnly()">선택된 룬만 보기</button>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="calculateRecommendations()">직업 추천 받기</button>
+                    <button class="btn btn-secondary" onclick="clearSelection()">선택 초기화</button>
+                </div>
+
+                <div class="section">
+                    <h2 class="section-title">무기 룬 (${AppState.weapons.length}개)</h2>
+                    <div class="rune-grid">
+                        ${AppState.weapons.map(weapon => `
+                            <div class="rune-item ${weapon.grade.toLowerCase()}"
+                                 data-rune-id="${weapon.id}"
+                                 data-rune-type="WEAPON"
+                                 onclick="toggleRune(${weapon.id})">
+                                <div class="rune-name">${weapon.name}</div>
+                                <div class="rune-grade">${weapon.grade}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2 class="section-title">방어구 룬 (${AppState.armors.length}개)</h2>
+                    <div class="rune-grid">
+                        ${AppState.armors.map(armor => `
+                            <div class="rune-item ${armor.grade.toLowerCase()}"
+                                 data-rune-id="${armor.id}"
+                                 data-rune-type="ARMOR"
+                                 onclick="toggleRune(${armor.id})">
+                                <div class="rune-name">${armor.name}</div>
+                                <div class="rune-grade">${armor.grade}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2 class="section-title">장신구 룬 (${AppState.accessories.length}개)</h2>
+                    <div class="rune-grid">
+                        ${AppState.accessories.map(accessory => `
+                            <div class="rune-item ${accessory.grade.toLowerCase()}"
+                                 data-rune-id="${accessory.id}"
+                                 data-rune-type="ACC"
+                                 onclick="toggleRune(${accessory.id})">
+                                <div class="rune-name">${accessory.name}</div>
+                                <div class="rune-grade">${accessory.grade}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2 class="section-title">앰블럼 룬 (${AppState.emblems.length}개)</h2>
+                    <div class="rune-grid">
+                        ${AppState.emblems.map(emblem => `
+                            <div class="rune-item ${emblem.grade.toLowerCase()}"
+                                 data-rune-id="${emblem.id}"
+                                 data-rune-type="EMBLEM"
+                                 onclick="toggleRune(${emblem.id})">
+                                <div class="rune-name">${emblem.name}</div>
+                                <div class="rune-grade">${emblem.grade}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('app').innerHTML = html;
+
+            // 검색 입력 이벤트 리스너 추가
+            const searchInput = document.getElementById('searchInput');
+            searchInput.addEventListener('input', (e) => {
+                handleSearch(e.target.value);
+            });
+            searchInput.addEventListener('keydown', handleKeyboard);
+
+            // 외부 클릭시 드롭다운 닫기
+            document.addEventListener('click', (e) => {
+                const searchContainer = document.querySelector('.search-container');
+                if (searchContainer && !searchContainer.contains(e.target)) {
+                    const dropdown = document.getElementById('autocompleteDropdown');
+                    if (dropdown) {
+                        dropdown.classList.remove('visible');
+                    }
+                }
+            });
+
+            // 저장된 선택 상태 복원
+            AppState.selectedRunes.forEach(runeId => {
+                updateRuneUI(runeId);
+            });
+            updateSelectedCount();
+        }
+
+        // 데이터 새로고침
+        async function refreshData() {
+            if (confirm('캐시를 지우고 새로운 데이터를 불러오시겠습니까?')) {
+                CacheManager.clearCache();
+                location.reload();
+            }
+        }
+
+        // 초기화
+        async function init() {
+            try {
+                // 저장된 선택 룬 불러오기
+                AppState.selectedRunes = CacheManager.loadSelectedRunes();
+
+                const data = await loadAllData();
+
+                AppState.classes = data.classes || [];
+                AppState.weapons = data.weapons || [];
+                AppState.armors = data.armors || [];
+                AppState.emblems = data.emblems || [];
+                AppState.accessories = data.accessories || [];
+                AppState.statistics = data.statistics || [];
+
+                // 모든 룬 데이터 통합
+                buildAllRunesArray();
+
+                renderUI();
+            } catch (error) {
+                console.error('초기화 오류:', error);
+                console.error('오류 상세:', error.message);
+                document.getElementById('app').innerHTML = `
+                    <div class="error-message">
+                        <h3>데이터 로드 실패</h3>
+                        <p>서버에서 데이터를 불러오는데 실패했습니다.</p>
+                        <p>오류: ${error.message}</p>
+                        <p>잠시 후 다시 시도해주세요.</p>
+                        <button class="btn btn-primary" onclick="location.reload()">다시 시도</button>
+                        <button class="btn btn-secondary" onclick="CacheManager.clearCache(); location.reload()">캐시 삭제 후 재시도</button>
+                    </div>
+                `;
+            }
+        }
+
+        // 페이지 로드 시 초기화
+        init();
+    </script>
+</body>
+</html>
