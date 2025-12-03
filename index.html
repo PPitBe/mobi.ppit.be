@@ -12,8 +12,8 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #2c1810 0%, #4a2c1a 50%, #2c1810 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
             background-attachment: fixed;
             min-height: 100vh;
             padding: 20px;
@@ -28,55 +28,54 @@
             right: 0;
             bottom: 0;
             background-image:
-                radial-gradient(circle at 20% 50%, rgba(255, 200, 100, 0.05) 0%, transparent 50%),
-                radial-gradient(circle at 80% 80%, rgba(139, 69, 19, 0.05) 0%, transparent 50%);
+                radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.2) 0%, transparent 50%);
             pointer-events: none;
         }
 
         .container {
             max-width: 1400px;
             margin: 0 auto;
-            background: linear-gradient(to bottom, #fffaf0 0%, #fff8dc 100%);
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 30px rgba(255, 200, 100, 0.3);
+            background: #ffffff;
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12);
             overflow: hidden;
-            border: 3px solid #d4a574;
             position: relative;
         }
 
         header {
-            background: linear-gradient(135deg, #8b4513 0%, #d2691e 50%, #8b4513 100%);
-            color: #fff8dc;
-            padding: 30px;
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            color: #2d3748;
+            padding: 40px 30px;
             text-align: center;
-            border-bottom: 3px solid #d4a574;
-            box-shadow: inset 0 -10px 20px rgba(0, 0, 0, 0.2);
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
         }
 
         h1 {
             font-size: 2.5em;
             margin-bottom: 10px;
-            color: #fffacd;
-            font-weight: bold;
+            color: #2d3748;
+            font-weight: 700;
+            letter-spacing: -0.5px;
         }
 
         .subtitle {
             font-size: 1.1em;
-            opacity: 0.95;
-            color: #ffefd5;
+            opacity: 0.8;
+            color: #4a5568;
+            font-weight: 400;
         }
 
         .loading {
             text-align: center;
             padding: 60px;
             font-size: 1.3em;
-            color: #8b4513;
+            color: #9f7aea;
         }
 
         .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #d2691e;
+            border: 4px solid #f0f0f0;
+            border-top: 4px solid #b794f6;
             border-radius: 50%;
             width: 50px;
             height: 50px;
@@ -99,11 +98,12 @@
 
         .section-title {
             font-size: 1.8em;
-            color: #8b4513;
+            color: #2d3748;
             margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 3px solid #d4a574;
-            text-shadow: 1px 1px 2px rgba(139, 69, 19, 0.2);
+            padding-bottom: 12px;
+            border-bottom: 3px solid #e2e8f0;
+            font-weight: 700;
+            letter-spacing: -0.3px;
         }
 
         .rune-type-container {
@@ -119,70 +119,110 @@
 
         .rune-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-            gap: 10px;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            max-width: calc(80px * 10 + 6px * 9);
+            gap: 6px;
+            margin: 0 auto;
         }
 
         .rune-item {
-            background: #f8f9fa;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            padding: 10px;
+            background: #faf5ff;
+            border: 2px solid #e9d8fd;
+            border-radius: 10px;
+            padding: 8px 4px;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             text-align: center;
+            box-shadow: 0 2px 8px rgba(183, 148, 244, 0.1);
+            aspect-ratio: 1 / 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
 
         .rune-item:hover {
             transform: translateY(-3px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 8px 20px rgba(183, 148, 244, 0.2);
+            background: white;
         }
 
         .rune-item.selected {
-            background: linear-gradient(135deg, #d2691e 0%, #8b4513 100%);
-            border-color: #d4a574;
-            color: #fffacd;
-            font-weight: bold;
-            box-shadow: 0 0 15px rgba(210, 105, 30, 0.6);
+            background: linear-gradient(135deg, #b794f6 0%, #9f7aea 100%);
+            border-color: #b794f6;
+            color: white;
+            font-weight: 600;
+            box-shadow: 0 6px 16px rgba(183, 148, 244, 0.4);
         }
 
-        /* 룬 타입별 색상 구분 */
+        /* 룬 타입별 좌측 색상 바 */
         .rune-item[data-rune-type="WEAPON"]:not(.selected) {
-            background: #ffe4e1;
-            border-color: #ff8a80;
+            border-left: 4px solid #fc8181;
         }
 
         .rune-item[data-rune-type="ARMOR"]:not(.selected) {
-            background: #e3f2fd;
-            border-color: #90caf9;
+            border-left: 4px solid #90cdf4;
         }
 
         .rune-item[data-rune-type="EMBLEM"]:not(.selected) {
-            background: #f3e5f5;
-            border-color: #ce93d8;
+            border-left: 4px solid #b794f6;
         }
 
         .rune-item[data-rune-type="ACC"]:not(.selected) {
-            background: #fff3e0;
-            border-color: #ffb74d;
+            border-left: 4px solid #fbb6ce;
         }
 
-        .rune-item.legend {
-            border-left: 4px solid #ffd700;
+        /* 등급별 구분 - 미선택 상태 */
+        .rune-item.legend:not(.selected) {
+            border: 2px solid #f6ad55;
+            border-left: 4px solid #f6ad55;
+            background: linear-gradient(to right, #fff5eb 0%, #faf5ff 100%);
         }
 
-        .rune-item.mythic {
-            border-left: 4px solid #ff4500;
+        .rune-item.mythic:not(.selected) {
+            border: 2px solid #ffd666;
+            border-left: 4px solid #ffd666;
+            background: linear-gradient(to right, #fffbeb 0%, #faf5ff 100%);
+        }
+
+        /* 등급별 구분 - 선택 상태 */
+        .rune-item.legend.selected {
+            background: linear-gradient(135deg, #f6ad55 0%, #ec6016 100%);
+            border-color: #f6ad55;
+            box-shadow: 0 6px 16px rgba(236, 96, 22, 0.4);
+        }
+
+        .rune-item.mythic.selected {
+            background: linear-gradient(135deg, #ffd666 0%, #ffb020 100%);
+            border-color: #ffd666;
+            box-shadow: 0 6px 16px rgba(255, 220, 87, 0.4);
+        }
+
+        /* 등급 텍스트 색상 */
+        .rune-item.legend:not(.selected) .rune-grade {
+            color: #ec6016;
+            font-weight: 700;
+        }
+
+        .rune-item.mythic:not(.selected) .rune-grade {
+            color: #d97706;
+            font-weight: 700;
+        }
+
+        .rune-item.selected .rune-grade {
+            color: rgba(255, 255, 255, 0.95);
+            font-weight: 600;
         }
 
         .rune-name {
-            font-size: 0.9em;
+            font-size: 0.7em;
             word-break: keep-all;
+            line-height: 1.1;
         }
 
         .rune-grade {
-            font-size: 0.7em;
-            margin-top: 4px;
+            font-size: 0.55em;
+            margin-top: 3px;
             opacity: 0.7;
         }
 
@@ -198,37 +238,35 @@
         }
 
         .btn {
-            padding: 15px 40px;
-            font-size: 1.1em;
+            padding: 14px 32px;
+            font-size: 1.05em;
             border: none;
-            border-radius: 10px;
+            border-radius: 12px;
             cursor: pointer;
-            transition: all 0.3s ease;
-            font-weight: bold;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-weight: 600;
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #d2691e 0%, #8b4513 100%);
-            color: #fffacd;
-            border: 2px solid #d4a574;
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(135deg, #b794f6 0%, #9f7aea 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(183, 148, 244, 0.3);
         }
 
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(210, 105, 30, 0.6);
-            background: linear-gradient(135deg, #e67e22 0%, #a0522d 100%);
+            box-shadow: 0 6px 16px rgba(183, 148, 244, 0.4);
         }
 
         .btn-secondary {
-            background: linear-gradient(135deg, #8b7355 0%, #6b5d50 100%);
-            color: #fff8dc;
-            border: 2px solid #a0826d;
+            background: linear-gradient(135deg, #e9d8fd 0%, #d6bcfa 100%);
+            color: #553c9a;
+            box-shadow: 0 4px 12px rgba(214, 188, 250, 0.3);
         }
 
         .btn-secondary:hover {
-            background: linear-gradient(135deg, #a0826d 0%, #7d6e5d 100%);
-            box-shadow: 0 5px 15px rgba(139, 115, 85, 0.4);
+            background: linear-gradient(135deg, #d6bcfa 0%, #c4b5fd 100%);
+            box-shadow: 0 6px 16px rgba(214, 188, 250, 0.4);
         }
 
         .btn:disabled {
@@ -237,168 +275,208 @@
         }
 
         .results {
-            background: linear-gradient(to bottom, #fff8dc 0%, #faebd7 100%);
-            border-radius: 15px;
-            padding: 30px;
-            margin-top: 30px;
-            border: 2px solid #d4a574;
-            box-shadow: 0 5px 15px rgba(139, 69, 19, 0.2);
+            background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+            border-radius: 20px;
+            padding: 20px;
+            margin-top: 20px;
+            border: 2px solid #e9d8fd;
+            box-shadow: 0 8px 24px rgba(183, 148, 244, 0.15);
         }
 
         .results-title {
-            font-size: 1.5em;
-            color: #8b4513;
-            margin-bottom: 20px;
+            font-size: 1.3em;
+            color: #2d3748;
+            margin-bottom: 16px;
             text-align: center;
-            text-shadow: 1px 1px 2px rgba(139, 69, 19, 0.2);
+            font-weight: 700;
         }
 
         .job-result {
-            background: linear-gradient(to bottom, #fffaf0 0%, #fff8dc 100%);
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 15px;
-            border-left: 5px solid #d2691e;
-            border: 2px solid #d4a574;
-            transition: all 0.3s ease;
-            box-shadow: 0 3px 10px rgba(139, 69, 19, 0.15);
+            background: white;
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-bottom: 10px;
+            border-left: 4px solid #b794f6;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 8px rgba(183, 148, 244, 0.1);
         }
 
         .job-result:hover {
-            transform: translateX(5px);
-            box-shadow: 0 5px 15px rgba(210, 105, 30, 0.3);
+            transform: translateX(4px);
+            box-shadow: 0 4px 16px rgba(183, 148, 244, 0.2);
         }
 
         .job-result.top-result {
-            border-left-color: #ffd700;
-            background: linear-gradient(90deg, #fffacd 0%, #fff8dc 100%);
-            border: 3px solid #ffd700;
-            box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+            border-left-color: #ffd666;
+            background: linear-gradient(to right, #fffbeb 0%, white 100%);
+            box-shadow: 0 4px 16px rgba(255, 214, 102, 0.3);
         }
 
         .job-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
 
         .job-name {
-            font-size: 1.3em;
-            font-weight: bold;
-            color: #8b4513;
-            text-shadow: 1px 1px 2px rgba(139, 69, 19, 0.2);
+            font-size: 1.1em;
+            font-weight: 700;
+            color: #2d3748;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
         }
 
         .stats-link {
-            font-size: 0.8em;
+            font-size: 0.75em;
             text-decoration: none;
-            padding: 5px 10px;
-            background: linear-gradient(135deg, #d2691e 0%, #8b4513 100%);
+            padding: 4px 10px;
+            background: linear-gradient(135deg, #fbb6ce 0%, #f687b3 100%);
+            color: white;
             border-radius: 8px;
-            border: 2px solid #d4a574;
-            transition: all 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             display: inline-flex;
             align-items: center;
-            box-shadow: 0 2px 5px rgba(139, 69, 19, 0.3);
+            box-shadow: 0 2px 6px rgba(251, 182, 206, 0.3);
         }
 
         .stats-link:hover {
-            transform: scale(1.1);
-            box-shadow: 0 4px 10px rgba(210, 105, 30, 0.5);
+            transform: scale(1.05);
+            box-shadow: 0 3px 10px rgba(251, 182, 206, 0.4);
         }
 
         .job-score {
-            font-size: 1.5em;
-            font-weight: bold;
-            color: #d2691e;
-            text-shadow: 1px 1px 2px rgba(210, 105, 30, 0.3);
+            font-size: 1.2em;
+            font-weight: 700;
+            color: #9f7aea;
         }
 
         .top-result .job-score {
-            color: #daa520;
-            text-shadow: 1px 1px 3px rgba(218, 165, 32, 0.5);
+            color: #ec6016;
         }
 
         .job-details {
-            font-size: 0.95em;
-            color: #6b5d50;
-            line-height: 1.6;
+            font-size: 0.85em;
+            color: #718096;
+            line-height: 1.4;
         }
 
         .matched-runes {
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 1px solid #d4a574;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #e2e8f0;
         }
 
         .matched-runes-title {
-            font-weight: bold;
-            margin-bottom: 5px;
-            color: #d2691e;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #4a5568;
+            font-size: 0.8em;
         }
 
         .rune-tag {
             display: inline-block;
-            background: #667eea;
+            background: linear-gradient(135deg, #b794f6 0%, #9f7aea 100%);
             color: white;
             padding: 4px 10px;
-            border-radius: 15px;
-            font-size: 0.85em;
+            border-radius: 16px;
+            font-size: 0.75em;
             margin: 3px;
+            font-weight: 500;
+            box-shadow: 0 1px 4px rgba(183, 148, 244, 0.2);
         }
 
         .rune-tag-weapon {
-            background: #ff6b6b;
-            color: white;
+            background: linear-gradient(135deg, #fc8181 0%, #f56565 100%);
+            box-shadow: 0 2px 6px rgba(252, 129, 129, 0.2);
         }
 
         .rune-tag-armor {
-            background: #4dabf7;
-            color: white;
+            background: linear-gradient(135deg, #90cdf4 0%, #63b3ed 100%);
+            box-shadow: 0 2px 6px rgba(144, 205, 244, 0.2);
         }
 
         .rune-tag-emblem {
-            background: #b197fc;
-            color: white;
+            background: linear-gradient(135deg, #b794f6 0%, #9f7aea 100%);
+            box-shadow: 0 2px 6px rgba(183, 148, 244, 0.2);
         }
 
         .rune-tag-acc {
-            background: #ff922b;
-            color: white;
+            background: linear-gradient(135deg, #fbb6ce 0%, #f687b3 100%);
+            box-shadow: 0 2px 6px rgba(251, 182, 206, 0.2);
+        }
+
+        .other-jobs {
+            margin-top: 20px;
+            padding: 16px;
+            background: white;
+            border-radius: 12px;
+            border: 2px solid #e9d8fd;
+        }
+
+        .other-jobs-title {
+            font-size: 1em;
+            font-weight: 700;
+            color: #4a5568;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .other-jobs-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .other-job-item {
+            display: inline-block;
+            padding: 6px 12px;
+            background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+            border: 1px solid #e9d8fd;
+            border-radius: 8px;
+            font-size: 0.85em;
+            color: #4a5568;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .other-job-item:hover {
+            background: linear-gradient(135deg, #e9d8fd 0%, #d6bcfa 100%);
+            border-color: #b794f6;
+            color: #2d3748;
+            transform: translateY(-1px);
         }
 
         .cache-info {
             text-align: center;
-            padding: 15px;
-            background: linear-gradient(to right, #fff8dc 0%, #faebd7 50%, #fff8dc 100%);
-            border-radius: 10px;
+            padding: 14px;
+            background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+            border-radius: 12px;
             margin-bottom: 20px;
             font-size: 0.9em;
-            color: #8b4513;
-            border: 1px solid #d4a574;
+            color: #718096;
+            border: 2px solid #e9d8fd;
         }
 
         .cache-info a {
-            color: #d2691e;
-            text-decoration: underline;
-            font-weight: bold;
+            color: #9f7aea;
+            text-decoration: none;
+            font-weight: 600;
+            border-bottom: 2px solid #b794f6;
         }
 
         .cache-info a:hover {
-            color: #a0522d;
+            color: #805ad5;
+            border-bottom-color: #9f7aea;
         }
 
         .selected-count {
             text-align: center;
             font-size: 1.1em;
-            color: #d2691e;
+            color: #9f7aea;
             margin: 20px 0;
-            font-weight: bold;
-            text-shadow: 1px 1px 2px rgba(210, 105, 30, 0.2);
+            font-weight: 600;
         }
 
         .filter-toggle {
@@ -407,27 +485,27 @@
         }
 
         .toggle-btn {
-            padding: 10px 25px;
+            padding: 10px 24px;
             font-size: 0.95em;
-            border: 2px solid #d2691e;
-            background: linear-gradient(to bottom, #fffaf0 0%, #fff8dc 100%);
-            color: #8b4513;
-            border-radius: 25px;
+            border: 2px solid #e9d8fd;
+            background: white;
+            color: #553c9a;
+            border-radius: 12px;
             cursor: pointer;
-            transition: all 0.3s ease;
-            font-weight: bold;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-weight: 600;
         }
 
         .toggle-btn:hover {
-            background: linear-gradient(to bottom, #fff8dc 0%, #faebd7 100%);
-            box-shadow: 0 3px 10px rgba(210, 105, 30, 0.3);
+            background: #faf5ff;
+            border-color: #d6bcfa;
         }
 
         .toggle-btn.active {
-            background: linear-gradient(135deg, #d2691e 0%, #8b4513 100%);
-            color: #fffacd;
-            border-color: #d4a574;
-            box-shadow: 0 0 15px rgba(210, 105, 30, 0.5);
+            background: linear-gradient(135deg, #b794f6 0%, #9f7aea 100%);
+            color: white;
+            border-color: #b794f6;
+            box-shadow: 0 4px 12px rgba(183, 148, 244, 0.3);
         }
 
         .rune-item.hidden {
@@ -440,8 +518,8 @@
             }
 
             .rune-grid {
-                grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-                gap: 8px;
+                grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+                gap: 5px;
             }
 
             .main-content {
@@ -457,39 +535,39 @@
             }
 
             .rune-item {
-                padding: 8px;
+                padding: 6px 3px;
             }
 
             .rune-name {
-                font-size: 0.85em;
+                font-size: 0.65em;
             }
 
             .rune-grade {
-                font-size: 0.65em;
+                font-size: 0.5em;
             }
         }
 
         .error-message {
-            background: #fee;
-            color: #c33;
+            background: linear-gradient(135deg, #fed7d7 0%, #fbb6ce 100%);
+            color: #c53030;
             padding: 20px;
-            border-radius: 10px;
+            border-radius: 16px;
             margin: 20px 0;
-            border-left: 4px solid #c33;
+            border-left: 4px solid #fc8181;
+            box-shadow: 0 4px 12px rgba(252, 129, 129, 0.2);
         }
 
         .search-note {
             max-width: 600px;
             margin: 20px auto 10px;
-            padding: 10px 15px;
-            background: linear-gradient(to right, #fffacd 0%, #fff8dc 100%);
-            border-left: 4px solid #daa520;
-            border-radius: 5px;
+            padding: 14px 18px;
+            background: linear-gradient(135deg, #f3e8ff 0%, #e9d8fd 100%);
+            border-left: 4px solid #b794f6;
+            border-radius: 12px;
             font-size: 0.9em;
-            color: #8b4513;
+            color: #4a5568;
             line-height: 1.5;
-            border: 1px solid #d4a574;
-            box-shadow: 0 2px 5px rgba(139, 69, 19, 0.15);
+            box-shadow: 0 2px 8px rgba(183, 148, 244, 0.1);
         }
 
         .search-container {
@@ -500,41 +578,41 @@
 
         .search-input {
             width: 100%;
-            padding: 15px 50px 15px 20px;
-            font-size: 1.1em;
-            border: 2px solid #d2691e;
-            border-radius: 10px;
+            padding: 14px 50px 14px 18px;
+            font-size: 1.05em;
+            border: 2px solid #e9d8fd;
+            border-radius: 16px;
             outline: none;
-            transition: all 0.3s ease;
-            background: linear-gradient(to bottom, #fffaf0 0%, #fff 100%);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: white;
         }
 
         .search-input:focus {
-            border-color: #8b4513;
-            box-shadow: 0 0 15px rgba(210, 105, 30, 0.4);
-            background: #fffaf0;
+            border-color: #b794f6;
+            box-shadow: 0 0 0 4px rgba(183, 148, 244, 0.15);
+            background: #faf5ff;
         }
 
         .search-clear {
             position: absolute;
-            right: 15px;
+            right: 12px;
             top: 50%;
             transform: translateY(-50%);
-            background: linear-gradient(135deg, #8b7355 0%, #6b5d50 100%);
-            color: #fff8dc;
-            border: 1px solid #a0826d;
+            background: linear-gradient(135deg, #e9d8fd 0%, #d6bcfa 100%);
+            color: #553c9a;
+            border: none;
             border-radius: 50%;
-            width: 30px;
-            height: 30px;
+            width: 32px;
+            height: 32px;
             cursor: pointer;
-            font-size: 1.2em;
+            font-size: 1.3em;
             line-height: 1;
             display: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .search-clear:hover {
-            background: linear-gradient(135deg, #a0826d 0%, #7d6e5d 100%);
-            box-shadow: 0 2px 8px rgba(139, 115, 85, 0.4);
+            background: linear-gradient(135deg, #d6bcfa 0%, #c4b5fd 100%);
         }
 
         .search-clear.visible {
@@ -546,15 +624,15 @@
             top: 100%;
             left: 0;
             right: 0;
-            background: linear-gradient(to bottom, #fffaf0 0%, #fff8dc 100%);
-            border: 2px solid #d2691e;
+            background: white;
+            border: 2px solid #e9d8fd;
             border-top: none;
-            border-radius: 0 0 10px 10px;
+            border-radius: 0 0 16px 16px;
             max-height: 400px;
             overflow-y: auto;
             z-index: 1000;
             display: none;
-            box-shadow: 0 5px 15px rgba(139, 69, 19, 0.3);
+            box-shadow: 0 8px 24px rgba(183, 148, 244, 0.2);
         }
 
         .autocomplete-dropdown.visible {
@@ -562,10 +640,10 @@
         }
 
         .autocomplete-item {
-            padding: 12px 20px;
+            padding: 14px 18px;
             cursor: pointer;
-            border-bottom: 1px solid #d4a574;
-            transition: all 0.2s ease;
+            border-bottom: 1px solid #faf5ff;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -577,58 +655,59 @@
 
         .autocomplete-item:hover,
         .autocomplete-item.active {
-            background: linear-gradient(to right, #fff8dc 0%, #faebd7 100%);
+            background: #faf5ff;
         }
 
         .autocomplete-item.selected-item {
-            background: linear-gradient(90deg, #fffacd 0%, #fff8dc 100%);
-            border-left: 3px solid #d2691e;
+            background: linear-gradient(to right, #f3e8ff 0%, #faf5ff 100%);
+            border-left: 3px solid #b794f6;
         }
 
         .autocomplete-type {
             display: inline-block;
-            padding: 3px 10px;
-            border-radius: 5px;
-            font-size: 0.85em;
-            font-weight: bold;
+            padding: 5px 12px;
+            border-radius: 10px;
+            font-size: 0.8em;
+            font-weight: 600;
             margin-right: 10px;
         }
 
         .autocomplete-type.weapon {
-            background: #ffe4e1;
-            color: #c62828;
+            background: linear-gradient(135deg, #fed7d7 0%, #fbb6ce 100%);
+            color: #c53030;
         }
 
         .autocomplete-type.armor {
-            background: #e3f2fd;
-            color: #1565c0;
+            background: linear-gradient(135deg, #bee3f8 0%, #90cdf4 100%);
+            color: #2c5282;
         }
 
         .autocomplete-type.emblem {
-            background: #f3e5f5;
-            color: #7b1fa2;
+            background: linear-gradient(135deg, #e9d8fd 0%, #d6bcfa 100%);
+            color: #6b46c1;
         }
 
         .autocomplete-type.acc {
-            background: #fff3e0;
-            color: #e65100;
+            background: linear-gradient(135deg, #feebc8 0%, #fbd38d 100%);
+            color: #c05621;
         }
 
         .autocomplete-name {
             flex: 1;
-            font-size: 1em;
+            font-size: 0.95em;
+            color: #2d3748;
         }
 
         .autocomplete-status {
             font-size: 0.85em;
-            color: #d2691e;
-            font-weight: bold;
+            color: #9f7aea;
+            font-weight: 600;
         }
 
         .no-results {
             padding: 20px;
             text-align: center;
-            color: #8b7355;
+            color: #718096;
         }
 
         @media (max-width: 768px) {
@@ -1037,7 +1116,7 @@
 
             const resultsHTML = `
                 <div class="results" id="results">
-                    <h2 class="results-title">추천 직업 (상위 ${Math.min(5, jobScores.length)}개)</h2>
+                    <h2 class="results-title">추천 직업 (상위 ${Math.min(jobScores.length, 20)}개)</h2>
                     ${jobScores.slice(0, 5).map((job, index) => `
                         <div class="job-result ${index === 0 ? 'top-result' : ''}">
                             <div class="job-header">
@@ -1068,6 +1147,16 @@
                             </div>
                         </div>
                     `).join('')}
+                    ${jobScores.length > 5 ? `
+                        <div class="other-jobs">
+                            <div class="other-jobs-title">기타 추천 직업:</div>
+                            <div class="other-jobs-list">
+                                ${jobScores.slice(5, 20).map((job, index) =>
+                                    `<span class="other-job-item">${index + 6}. ${job.job} (${job.matchCount}개)</span>`
+                                ).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
                 </div>
             `;
 
@@ -1377,7 +1466,7 @@
             });
         }
 
-        // 중복 제거: 같은 이름의 룬 중 첫 번째만 반환
+        // 중복 제거: 같은 이름의 룬 중 첫 번째만 반환하고 정렬
         function getUniqueRunes(runes) {
             const uniqueRunes = [];
             const seen = new Set();
@@ -1387,6 +1476,28 @@
                     uniqueRunes.push(rune);
                 }
             }
+
+            // 등급 순서 정의: LEGEND > MYTHIC > 나머지
+            const gradeOrder = {
+                'LEGEND': 1,
+                'MYTHIC': 2,
+                'EPIC': 3,
+                'RARE': 4,
+                'NORMAL': 5
+            };
+
+            // 정렬: 1) 등급 우선, 2) 이름 가나다순
+            uniqueRunes.sort((a, b) => {
+                const gradeA = gradeOrder[a.grade] || 999;
+                const gradeB = gradeOrder[b.grade] || 999;
+
+                if (gradeA !== gradeB) {
+                    return gradeA - gradeB;
+                }
+
+                return a.name.localeCompare(b.name, 'ko');
+            });
+
             return uniqueRunes;
         }
 
