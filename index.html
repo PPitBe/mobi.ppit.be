@@ -1342,6 +1342,11 @@
                 return;
             }
 
+            // 자동저장 프리셋 저장/업데이트
+            const autoSaveName = '자동저장';
+            CacheManager.savePreset(autoSaveName, AppState.selectedRunes);
+            renderPresetList();
+
             const jobScores = AppState.statistics.map(jobStat => {
                 let matchCount = 0;
                 let totalPercentage = 0;
