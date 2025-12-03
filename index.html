@@ -780,16 +780,32 @@
             return data;
         }
 
-        // 룬 선택/해제
+        // 룬 선택/해제 (동일한 이름의 룬을 모두 선택/해제)
         function toggleRune(runeId) {
-            if (AppState.selectedRunes.has(runeId)) {
-                AppState.selectedRunes.delete(runeId);
-            } else {
-                AppState.selectedRunes.add(runeId);
-            }
+            // 클릭한 룬의 정보 찾기
+            const clickedRune = AppState.allRunes.find(r => r.id === runeId);
+            if (!clickedRune) return;
+
+            // 같은 이름과 타입을 가진 모든 룬 찾기
+            const sameNameRunes = AppState.allRunes.filter(r =>
+                r.name === clickedRune.name && r.type === clickedRune.type
+            );
+
+            // 현재 선택 상태 확인 (하나라도 선택되어 있으면 선택된 것으로 간주)
+            const isSelected = sameNameRunes.some(r => AppState.selectedRunes.has(r.id));
+
+            // 모두 선택 또는 모두 해제
+            sameNameRunes.forEach(rune => {
+                if (isSelected) {
+                    AppState.selectedRunes.delete(rune.id);
+                } else {
+                    AppState.selectedRunes.add(rune.id);
+                }
+                updateRuneUI(rune.id);
+            });
+
             CacheManager.saveSelectedRunes(AppState.selectedRunes);
             updateSelectedCount();
-            updateRuneUI(runeId);
 
             // 선택된 룬만 보기 모드일 때 필터 재적용
             if (AppState.showSelectedOnly) {
@@ -823,6 +839,10 @@
 
         // 모든 룬 선택 해제
         function clearSelection() {
+            if (!confirm('선택한 모든 룬을 초기화하시겠습니까?')) {
+                return;
+            }
+
             AppState.selectedRunes.clear();
             CacheManager.saveSelectedRunes(AppState.selectedRunes);
             document.querySelectorAll('.rune-item.selected').forEach(el => {
@@ -1125,9 +1145,21 @@
             clearBtn.classList.add('visible');
 
             const normalizedQuery = query.toLowerCase().trim();
-            const results = AppState.allRunes.filter(rune =>
+            const allResults = AppState.allRunes.filter(rune =>
                 rune.name.toLowerCase().includes(normalizedQuery)
-            ).slice(0, 10);
+            );
+
+            // 중복 제거: 같은 타입과 이름을 가진 룬 중 첫 번째만 유지
+            const uniqueResults = [];
+            const seen = new Set();
+            for (const rune of allResults) {
+                const key = `${rune.type}-${rune.name}`;
+                if (!seen.has(key)) {
+                    seen.add(key);
+                    uniqueResults.push(rune);
+                }
+            }
+            const results = uniqueResults.slice(0, 10);
 
             AppState.searchResults = results;
             AppState.activeResultIndex = -1;
@@ -1139,7 +1171,11 @@
             }
 
             const html = results.map((rune, index) => {
-                const isSelected = AppState.selectedRunes.has(rune.id);
+                // 같은 이름의 룬 중 하나라도 선택되어 있는지 확인
+                const sameNameRunes = AppState.allRunes.filter(r =>
+                    r.name === rune.name && r.type === rune.type
+                );
+                const isSelected = sameNameRunes.some(r => AppState.selectedRunes.has(r.id));
                 const typeClass = rune.type.toLowerCase();
                 return `
                     <div class="autocomplete-item ${isSelected ? 'selected-item' : ''}"
@@ -1320,17 +1356,38 @@
 
             document.querySelectorAll('.section-title').forEach((titleEl, index) => {
                 if (sections[index]) {
-                    const selectedCount = sections[index].data.filter(rune =>
-                        AppState.selectedRunes.has(rune.id)
-                    ).length;
+                    // 중복 제거된 룬 개수
+                    const uniqueRunes = getUniqueRunes(sections[index].data);
+
+                    // 선택된 고유 룬 이름 개수
+                    const selectedUniqueNames = new Set();
+                    sections[index].data.forEach(rune => {
+                        if (AppState.selectedRunes.has(rune.id)) {
+                            selectedUniqueNames.add(rune.name);
+                        }
+                    });
+                    const selectedCount = selectedUniqueNames.size;
 
                     if (AppState.showSelectedOnly) {
                         titleEl.textContent = `${sections[index].title} (선택: ${selectedCount}개)`;
                     } else {
-                        titleEl.textContent = `${sections[index].title} (${sections[index].data.length}개)`;
+                        titleEl.textContent = `${sections[index].title} (${uniqueRunes.length}개)`;
                     }
                 }
             });
+        }
+
+        // 중복 제거: 같은 이름의 룬 중 첫 번째만 반환
+        function getUniqueRunes(runes) {
+            const uniqueRunes = [];
+            const seen = new Set();
+            for (const rune of runes) {
+                if (!seen.has(rune.name)) {
+                    seen.add(rune.name);
+                    uniqueRunes.push(rune);
+                }
+            }
+            return uniqueRunes;
         }
 
         // UI 렌더링
@@ -1341,13 +1398,17 @@
             const cacheInfo = AppState.cacheTimestamp ?
                 `<div class="cache-info">캐시된 데이터 사용 중 (${cacheAge}분 전 저장됨) | <a href="#" onclick="event.preventDefault(); refreshData();">새로고침</a></div>` : '';
 
+            // 각 타입별로 중복 제거
+            const uniqueWeapons = getUniqueRunes(AppState.weapons);
+            const uniqueArmors = getUniqueRunes(AppState.armors);
+            const uniqueAccessories = getUniqueRunes(AppState.accessories);
+            const uniqueEmblems = getUniqueRunes(AppState.emblems);
+
             const html = `
                 ${cacheInfo}
 
                 <div class="search-note">
-                    동일한 룬이 여러 건 조회될 경우 모두 선택
-                    <br>
-                    안보이는 룬은 체단실 통계 데이터에 없는 룬 
+                    💡 안보이는 룬은 체단실 통계 데이터에 없는 룬입니다
                 </div>
 
                 <div class="search-container">
@@ -1372,62 +1433,79 @@
                 </div>
 
                 <div class="section">
-                    <h2 class="section-title">무기 룬 (${AppState.weapons.length}개)</h2>
+                    <h2 class="section-title">무기 룬 (${uniqueWeapons.length}개)</h2>
                     <div class="rune-grid">
-                        ${AppState.weapons.map(weapon => `
-                            <div class="rune-item ${weapon.grade.toLowerCase()}"
-                                 data-rune-id="${weapon.id}"
-                                 data-rune-type="WEAPON"
-                                 onclick="toggleRune(${weapon.id})">
-                                <div class="rune-name">${weapon.name}</div>
-                                <div class="rune-grade">${weapon.grade}</div>
-                            </div>
-                        `).join('')}
+                        ${uniqueWeapons.map(weapon => {
+                            // 같은 이름의 룬 중 하나라도 선택되어 있는지 확인
+                            const sameNameRunes = AppState.weapons.filter(w => w.name === weapon.name);
+                            const isSelected = sameNameRunes.some(w => AppState.selectedRunes.has(w.id));
+                            return `
+                                <div class="rune-item ${weapon.grade.toLowerCase()} ${isSelected ? 'selected' : ''}"
+                                     data-rune-id="${weapon.id}"
+                                     data-rune-type="WEAPON"
+                                     onclick="toggleRune(${weapon.id})">
+                                    <div class="rune-name">${weapon.name}</div>
+                                    <div class="rune-grade">${weapon.grade}</div>
+                                </div>
+                            `;
+                        }).join('')}
                     </div>
                 </div>
 
                 <div class="section">
-                    <h2 class="section-title">방어구 룬 (${AppState.armors.length}개)</h2>
+                    <h2 class="section-title">방어구 룬 (${uniqueArmors.length}개)</h2>
                     <div class="rune-grid">
-                        ${AppState.armors.map(armor => `
-                            <div class="rune-item ${armor.grade.toLowerCase()}"
-                                 data-rune-id="${armor.id}"
-                                 data-rune-type="ARMOR"
-                                 onclick="toggleRune(${armor.id})">
-                                <div class="rune-name">${armor.name}</div>
-                                <div class="rune-grade">${armor.grade}</div>
-                            </div>
-                        `).join('')}
+                        ${uniqueArmors.map(armor => {
+                            const sameNameRunes = AppState.armors.filter(a => a.name === armor.name);
+                            const isSelected = sameNameRunes.some(a => AppState.selectedRunes.has(a.id));
+                            return `
+                                <div class="rune-item ${armor.grade.toLowerCase()} ${isSelected ? 'selected' : ''}"
+                                     data-rune-id="${armor.id}"
+                                     data-rune-type="ARMOR"
+                                     onclick="toggleRune(${armor.id})">
+                                    <div class="rune-name">${armor.name}</div>
+                                    <div class="rune-grade">${armor.grade}</div>
+                                </div>
+                            `;
+                        }).join('')}
                     </div>
                 </div>
 
                 <div class="section">
-                    <h2 class="section-title">장신구 룬 (${AppState.accessories.length}개)</h2>
+                    <h2 class="section-title">장신구 룬 (${uniqueAccessories.length}개)</h2>
                     <div class="rune-grid">
-                        ${AppState.accessories.map(accessory => `
-                            <div class="rune-item ${accessory.grade.toLowerCase()}"
-                                 data-rune-id="${accessory.id}"
-                                 data-rune-type="ACC"
-                                 onclick="toggleRune(${accessory.id})">
-                                <div class="rune-name">${accessory.name}</div>
-                                <div class="rune-grade">${accessory.grade}</div>
-                            </div>
-                        `).join('')}
+                        ${uniqueAccessories.map(accessory => {
+                            const sameNameRunes = AppState.accessories.filter(a => a.name === accessory.name);
+                            const isSelected = sameNameRunes.some(a => AppState.selectedRunes.has(a.id));
+                            return `
+                                <div class="rune-item ${accessory.grade.toLowerCase()} ${isSelected ? 'selected' : ''}"
+                                     data-rune-id="${accessory.id}"
+                                     data-rune-type="ACC"
+                                     onclick="toggleRune(${accessory.id})">
+                                    <div class="rune-name">${accessory.name}</div>
+                                    <div class="rune-grade">${accessory.grade}</div>
+                                </div>
+                            `;
+                        }).join('')}
                     </div>
                 </div>
 
                 <div class="section">
-                    <h2 class="section-title">앰블럼 룬 (${AppState.emblems.length}개)</h2>
+                    <h2 class="section-title">앰블럼 룬 (${uniqueEmblems.length}개)</h2>
                     <div class="rune-grid">
-                        ${AppState.emblems.map(emblem => `
-                            <div class="rune-item ${emblem.grade.toLowerCase()}"
-                                 data-rune-id="${emblem.id}"
-                                 data-rune-type="EMBLEM"
-                                 onclick="toggleRune(${emblem.id})">
-                                <div class="rune-name">${emblem.name}</div>
-                                <div class="rune-grade">${emblem.grade}</div>
-                            </div>
-                        `).join('')}
+                        ${uniqueEmblems.map(emblem => {
+                            const sameNameRunes = AppState.emblems.filter(e => e.name === emblem.name);
+                            const isSelected = sameNameRunes.some(e => AppState.selectedRunes.has(e.id));
+                            return `
+                                <div class="rune-item ${emblem.grade.toLowerCase()} ${isSelected ? 'selected' : ''}"
+                                     data-rune-id="${emblem.id}"
+                                     data-rune-type="EMBLEM"
+                                     onclick="toggleRune(${emblem.id})">
+                                    <div class="rune-name">${emblem.name}</div>
+                                    <div class="rune-grade">${emblem.grade}</div>
+                                </div>
+                            `;
+                        }).join('')}
                     </div>
                 </div>
             `;
