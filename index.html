@@ -512,6 +512,233 @@
             display: none;
         }
 
+        .preset-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+            border-radius: 16px;
+            border: 2px solid #e9d8fd;
+        }
+
+        .preset-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            gap: 12px;
+        }
+
+        .preset-title {
+            font-size: 1.1em;
+            font-weight: 700;
+            color: #2d3748;
+        }
+
+        .preset-actions {
+            display: flex;
+            gap: 8px;
+            flex: 1;
+        }
+
+        .preset-input {
+            padding: 8px 12px;
+            border: 2px solid #e9d8fd;
+            border-radius: 8px;
+            font-size: 0.9em;
+            outline: none;
+            transition: all 0.3s;
+            flex: 1;
+        }
+
+        .preset-input:focus {
+            border-color: #b794f6;
+            box-shadow: 0 0 0 3px rgba(183, 148, 244, 0.1);
+        }
+
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 0.9em;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-weight: 600;
+        }
+
+        .btn-save {
+            background: linear-gradient(135deg, #68d391 0%, #48bb78 100%);
+            color: white;
+            box-shadow: 0 2px 8px rgba(72, 187, 120, 0.3);
+        }
+
+        .btn-save:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(72, 187, 120, 0.4);
+        }
+
+        .preset-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .preset-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 8px 12px;
+            background: white;
+            border: 2px solid #e9d8fd;
+            border-radius: 10px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .preset-item:hover {
+            border-color: #b794f6;
+            box-shadow: 0 2px 8px rgba(183, 148, 244, 0.2);
+        }
+
+        .preset-item-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+        }
+
+        .preset-item-right {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .preset-name {
+            font-size: 0.9em;
+            color: #2d3748;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .preset-count {
+            font-size: 0.8em;
+            color: #718096;
+            padding: 2px 8px;
+            background: #f7fafc;
+            border-radius: 6px;
+        }
+
+        .preset-btn {
+            padding: 4px 8px;
+            font-size: 0.75em;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        .preset-btn-load {
+            background: linear-gradient(135deg, #b794f6 0%, #9f7aea 100%);
+            color: white;
+        }
+
+        .preset-btn-load:hover {
+            transform: scale(1.05);
+        }
+
+        .preset-btn-delete {
+            background: linear-gradient(135deg, #fc8181 0%, #f56565 100%);
+            color: white;
+        }
+
+        .preset-btn-delete:hover {
+            transform: scale(1.05);
+        }
+
+        .collapsible-section {
+            margin: 15px 0;
+        }
+
+        .section-toggle {
+            width: 100%;
+            padding: 12px 16px;
+            background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+            border: 2px solid #e9d8fd;
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1em;
+            font-weight: 600;
+            color: #2d3748;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .section-toggle:hover {
+            background: linear-gradient(135deg, #e9d8fd 0%, #d6bcfa 100%);
+            border-color: #b794f6;
+        }
+
+        .section-toggle-icon {
+            font-size: 1.2em;
+            transition: transform 0.3s;
+        }
+
+        .section-toggle.active .section-toggle-icon {
+            transform: rotate(180deg);
+        }
+
+        .section-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .section-content.open {
+            max-height: 2000px;
+            margin-top: 12px;
+        }
+
+        .main-controls {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+
+        .side-by-side-section {
+            display: grid;
+            grid-template-columns: 65fr 35fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .side-section {
+            background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+            border: 2px solid #e9d8fd;
+            border-radius: 16px;
+            padding: 20px;
+        }
+
+        .side-section-title {
+            font-size: 1.1em;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        @media (max-width: 768px) {
+            .side-by-side-section {
+                grid-template-columns: 1fr;
+            }
+        }
+
         @media (max-width: 768px) {
             h1 {
                 font-size: 1.8em;
@@ -558,22 +785,20 @@
         }
 
         .search-note {
-            max-width: 600px;
-            margin: 20px auto 10px;
-            padding: 14px 18px;
+            margin: 0 0 12px 0;
+            padding: 12px 14px;
             background: linear-gradient(135deg, #f3e8ff 0%, #e9d8fd 100%);
             border-left: 4px solid #b794f6;
             border-radius: 12px;
-            font-size: 0.9em;
+            font-size: 0.85em;
             color: #4a5568;
-            line-height: 1.5;
+            line-height: 1.4;
             box-shadow: 0 2px 8px rgba(183, 148, 244, 0.1);
         }
 
         .search-container {
             position: relative;
-            max-width: 600px;
-            margin: 0 auto 20px;
+            margin: 0;
         }
 
         .search-input {
@@ -758,6 +983,7 @@
         const CacheManager = {
             CACHE_KEY: 'runeRecommendationCache',
             SELECTED_RUNES_KEY: 'selectedRunes',
+            PRESETS_KEY: 'runePresets',
             CACHE_DURATION: 24 * 60 * 60 * 1000, // 24시간
 
             saveCache(data) {
@@ -810,6 +1036,46 @@
                 } catch (e) {
                     console.error('선택된 룬 로드 실패:', e);
                     return new Set();
+                }
+            },
+
+            // 프리셋 관리
+            savePreset(name, selectedRunes) {
+                try {
+                    const presets = this.loadPresets();
+                    const runesArray = Array.from(selectedRunes);
+                    presets[name] = {
+                        runes: runesArray,
+                        timestamp: Date.now()
+                    };
+                    localStorage.setItem(this.PRESETS_KEY, JSON.stringify(presets));
+                    return true;
+                } catch (e) {
+                    console.error('프리셋 저장 실패:', e);
+                    return false;
+                }
+            },
+
+            loadPresets() {
+                try {
+                    const saved = localStorage.getItem(this.PRESETS_KEY);
+                    if (!saved) return {};
+                    return JSON.parse(saved);
+                } catch (e) {
+                    console.error('프리셋 로드 실패:', e);
+                    return {};
+                }
+            },
+
+            deletePreset(name) {
+                try {
+                    const presets = this.loadPresets();
+                    delete presets[name];
+                    localStorage.setItem(this.PRESETS_KEY, JSON.stringify(presets));
+                    return true;
+                } catch (e) {
+                    console.error('프리셋 삭제 실패:', e);
+                    return false;
                 }
             }
         };
@@ -947,6 +1213,125 @@
             const resultsElement = document.getElementById('results');
             if (resultsElement) {
                 resultsElement.remove();
+            }
+        }
+
+        // 프리셋 저장
+        function savePreset() {
+            if (AppState.selectedRunes.size === 0) {
+                alert('저장할 룬이 선택되지 않았습니다.');
+                return;
+            }
+
+            const input = document.getElementById('presetNameInput');
+            const name = input.value.trim();
+
+            if (!name) {
+                alert('프리셋 이름을 입력해주세요.');
+                return;
+            }
+
+            const success = CacheManager.savePreset(name, AppState.selectedRunes);
+            if (success) {
+                alert(`프리셋 "${name}"이 저장되었습니다.`);
+                input.value = '';
+                renderPresetList();
+            } else {
+                alert('프리셋 저장에 실패했습니다.');
+            }
+        }
+
+        // 프리셋 불러오기
+        function loadPreset(name) {
+            const presets = CacheManager.loadPresets();
+            const preset = presets[name];
+
+            if (!preset) {
+                alert('프리셋을 찾을 수 없습니다.');
+                return;
+            }
+
+            // 기존 선택 초기화
+            AppState.selectedRunes.clear();
+            document.querySelectorAll('.rune-item.selected').forEach(el => {
+                el.classList.remove('selected');
+            });
+
+            // 프리셋의 룬 선택
+            preset.runes.forEach(runeId => {
+                AppState.selectedRunes.add(runeId);
+                updateRuneUI(runeId);
+            });
+
+            CacheManager.saveSelectedRunes(AppState.selectedRunes);
+            updateSelectedCount();
+            clearResults();
+
+            // 선택된 룬만 보기가 활성화되어 있다면 필터 적용
+            if (AppState.showSelectedOnly) {
+                applyRuneFilter();
+            }
+        }
+
+        // 프리셋 삭제
+        function deletePreset(name) {
+            if (!confirm(`프리셋 "${name}"을 삭제하시겠습니까?`)) {
+                return;
+            }
+
+            const success = CacheManager.deletePreset(name);
+            if (success) {
+                renderPresetList();
+            } else {
+                alert('프리셋 삭제에 실패했습니다.');
+            }
+        }
+
+        // 프리셋 목록 렌더링
+        function renderPresetList() {
+            const presets = CacheManager.loadPresets();
+            const container = document.getElementById('presetList');
+
+            if (!container) return;
+
+            if (Object.keys(presets).length === 0) {
+                container.innerHTML = '<div style="color: #718096; font-size: 0.9em; padding: 8px;">저장된 프리셋이 없습니다.</div>';
+                return;
+            }
+
+            const presetsHTML = Object.entries(presets)
+                .sort((a, b) => b[1].timestamp - a[1].timestamp) // 최신순 정렬
+                .map(([name, preset]) => `
+                    <div class="preset-item">
+                        <div class="preset-item-left">
+                            <span class="preset-name" onclick="loadPreset('${name.replace(/'/g, "\\'")}')">${name}</span>
+                            <span class="preset-count">${preset.runes.length}개</span>
+                        </div>
+                        <div class="preset-item-right">
+                            <button class="preset-btn preset-btn-load" onclick="loadPreset('${name.replace(/'/g, "\\'")}')">불러오기</button>
+                            <button class="preset-btn preset-btn-delete" onclick="deletePreset('${name.replace(/'/g, "\\'")}')">삭제</button>
+                        </div>
+                    </div>
+                `).join('');
+
+            container.innerHTML = presetsHTML;
+        }
+
+        // 섹션 토글
+        function toggleSection(sectionId) {
+            const toggle = document.getElementById(sectionId + 'Toggle');
+            const content = document.getElementById(sectionId + 'Content');
+
+            if (!toggle || !content) return;
+
+            const isOpen = content.classList.contains('open');
+
+            if (isOpen) {
+                content.classList.remove('open');
+                toggle.classList.remove('active');
+            } else {
+                content.classList.add('open');
+                toggle.classList.add('active');
             }
         }
 
@@ -1099,7 +1484,7 @@
             clearResults();
 
             // 결과를 버튼 바로 아래에 삽입
-            const actionButtons = document.querySelector('.action-buttons');
+            const actionButtons = document.querySelector('.main-controls');
 
             if (jobScores.length === 0) {
                 const resultsHTML = `
@@ -1518,29 +1903,46 @@
             const html = `
                 ${cacheInfo}
 
-                <div class="search-note">
-                    💡 안보이는 룬은 체단실 통계 데이터에 없는 룬입니다
-                </div>
-
-                <div class="search-container">
-                    <input type="text"
-                           id="searchInput"
-                           class="search-input"
-                           placeholder="룬 이름을 입력하세요 (예: 영웅, 분출, 압도)"
-                           autocomplete="off">
-                    <button id="searchClear" class="search-clear" onclick="clearSearch()">&times;</button>
-                    <div id="autocompleteDropdown" class="autocomplete-dropdown"></div>
+                <div class="side-by-side-section">
+                    <div class="side-section">
+                        <div class="side-section-title">🔍 룬 검색</div>
+                        <div class="search-note">
+                            💡 안보이는 룬은 체단실 통계 데이터에 없는 룬입니다
+                        </div>
+                        <div class="search-container">
+                            <input type="text"
+                                   id="searchInput"
+                                   class="search-input"
+                                   placeholder="룬 이름을 입력하세요 (예: 영웅, 분출, 압도)"
+                                   autocomplete="off">
+                            <button id="searchClear" class="search-clear" onclick="clearSearch()">&times;</button>
+                            <div id="autocompleteDropdown" class="autocomplete-dropdown"></div>
+                        </div>
+                    </div>
+                    <div class="side-section">
+                        <div class="side-section-title">🔖 룬 프리셋</div>
+                        <div class="preset-header">
+                            <div class="preset-actions">
+                                <input type="text"
+                                       id="presetNameInput"
+                                       class="preset-input"
+                                       placeholder="프리셋 이름 입력"
+                                       maxlength="20">
+                                <button class="btn-small btn-save" onclick="savePreset()">저장</button>
+                            </div>
+                        </div>
+                        <div id="presetList" class="preset-list">
+                            <div style="color: #718096; font-size: 0.9em; padding: 8px;">저장된 프리셋이 없습니다.</div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="selected-count" id="selectedCount">선택된 룬: 0개</div>
 
-                <div class="filter-toggle">
-                    <button id="toggleSelectedBtn" class="toggle-btn" onclick="toggleSelectedOnly()">선택된 룬만 보기</button>
-                </div>
-
-                <div class="action-buttons">
+                <div class="main-controls">
                     <button class="btn btn-primary" onclick="calculateRecommendations()">직업 추천 받기</button>
                     <button class="btn btn-secondary" onclick="clearSelection()">선택 초기화</button>
+                    <button id="toggleSelectedBtn" class="toggle-btn" onclick="toggleSelectedOnly()">선택된 룬만 보기</button>
                 </div>
 
                 <div class="section">
@@ -1646,6 +2048,9 @@
                 updateRuneUI(runeId);
             });
             updateSelectedCount();
+
+            // 프리셋 목록 렌더링
+            renderPresetList();
         }
 
         // 데이터 새로고침
