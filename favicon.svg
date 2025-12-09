@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- 배경 -->
+  <rect width="100" height="100" rx="20" fill="url(#grad1)"/>
+
+  <!-- 그라데이션 정의 -->
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#b794f6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#7c3aed;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- 귀여운 룬 심볼 (다이아몬드 형태) -->
+  <path d="M 50 20 L 70 40 L 70 60 L 50 80 L 30 60 L 30 40 Z"
+        fill="white"
+        stroke="#ffd700"
+        stroke-width="3"
+        opacity="0.95"/>
+
+  <!-- 중앙 별 모양 -->
+  <circle cx="50" cy="50" r="8" fill="#ffd700"/>
+
+  <!-- 작은 반짝임 효과 -->
+  <circle cx="42" cy="35" r="3" fill="white" opacity="0.8"/>
+  <circle cx="58" cy="35" r="2" fill="white" opacity="0.7"/>
+  <circle cx="50" cy="65" r="2.5" fill="white" opacity="0.6"/>
+</svg>
