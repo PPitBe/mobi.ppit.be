@@ -222,8 +222,32 @@
 
         .rune-item.mythic.selected {
             background: linear-gradient(135deg, #ffd666 0%, #ffb020 100%);
+        }
+
+        /* 매치되지 않은 룬 스타일 */
+        .rune-item.unmatched:not(.selected) {
+            opacity: 0.6;
+            border-style: dashed !important;
+        }
+
+        .rune-item.unmatched.selected {
+            opacity: 0.85;
             border-color: #ffd666;
             box-shadow: 0 6px 16px rgba(255, 220, 87, 0.4);
+        }
+
+        /* 통계에 없는 룬 스타일 */
+        .rune-item.no-stats {
+            opacity: 0.7;
+            border-style: dotted !important;
+        }
+
+        .rune-item.no-stats:hover {
+            opacity: 0.85;
+        }
+
+        .rune-item.no-stats.selected {
+            opacity: 1;
         }
 
         /* 등급 텍스트 색상 */
@@ -970,6 +994,14 @@
             font-weight: 600;
         }
 
+        .autocomplete-item.unmatched-item {
+            opacity: 0.7;
+        }
+
+        .autocomplete-item.unmatched-item .autocomplete-status {
+            color: #e53e3e;
+        }
+
         .no-results {
             padding: 20px;
             text-align: center;
@@ -987,6 +1019,9 @@
             }
         }
     </style>
+    <!-- 인게임 룬 데이터 -->
+    <script src="api-config.js"></script>
+    <script src="ingame-runes.js"></script>
 </head>
 <body>
     <div class="container">
@@ -1019,6 +1054,75 @@
             activeResultIndex: -1,
             showSelectedOnly: false
         };
+
+        // 룬 이름 정규화 함수 (띄어쓰기, 모든 특수문자 제거)
+        function cleanRuneName(name) {
+            // 띄어쓰기 및 모든 특수문자 제거 (한글, 영문, 숫자만 유지)
+            return name.replace(/\s+/g, '').replace(/[^\w가-힣]/g, '');
+        }
+
+        // 룬 이름을 인게임 이름으로 변환
+        function normalizeRuneName(name) {
+            // 먼저 직접 매핑 확인
+            if (RUNE_NAME_MAPPING[name]) {
+                return RUNE_NAME_MAPPING[name];
+            }
+
+            // 매핑이 없으면 유사 매칭 시도
+            const cleanedName = cleanRuneName(name);
+
+            // 모든 룬 타입에서 찾기
+            for (const runeType in INGAME_RUNE_ORDER) {
+                const order = INGAME_RUNE_ORDER[runeType];
+                for (const ingameName of order) {
+                    if (cleanRuneName(ingameName) === cleanedName) {
+                        return ingameName; // 인게임 이름 반환
+                    }
+                }
+            }
+
+            return name; // 매치 실패 시 원본 반환
+        }
+
+        // 인게임 정렬 순서에 따른 인덱스 반환
+        function getIngameRuneIndex(runeName, runeType) {
+            const normalizedName = normalizeRuneName(runeName);
+            const order = INGAME_RUNE_ORDER[runeType];
+            if (!order) return 999999;
+
+            // 정확히 일치하는 경우
+            let index = order.indexOf(normalizedName);
+            if (index !== -1) return index;
+
+            // 정규화된 이름으로 비교
+            const cleanedName = cleanRuneName(normalizedName);
+            index = order.findIndex(name => cleanRuneName(name) === cleanedName);
+            return index === -1 ? 999999 : index;
+        }
+
+        // 룬이 인게임 정렬 목록에 있는지 확인
+        function isRuneMatched(runeName, runeType) {
+            const normalizedName = normalizeRuneName(runeName);
+            const order = INGAME_RUNE_ORDER[runeType];
+            if (!order) return false;
+
+            // 정확히 일치하는 경우
+            if (order.includes(normalizedName)) return true;
+
+            // 정규화된 이름으로 비교
+            const cleanedName = cleanRuneName(normalizedName);
+            return order.some(name => cleanRuneName(name) === cleanedName);
+        }
+
+        // 룬이 인게임에 존재하는지 확인 (모든 타입 검색)
+        function isRuneInIngame(runeName) {
+            for (const runeType in INGAME_RUNE_ORDER) {
+                if (isRuneMatched(runeName, runeType)) {
+                    return true;
+                }
+            }
+            return false;
+        }
 
         // LocalStorage 캐싱 관리
         const CacheManager = {
@@ -1133,13 +1237,14 @@
 
             console.log('API에서 새 데이터 로드');
 
+            const urls = API_CONFIG.urls;
             const [classesRes, weaponsRes, armorsRes, emblemsRes, accessoriesRes, statsRes] = await Promise.all([
-                fetch('https://api.m-inbody.info/api/v1/rankings/classes'),
-                fetch('https://api.m-inbody.info/api/v1/items/type/WEAPON?season=1'),
-                fetch('https://api.m-inbody.info/api/v1/items/type/ARMOR?season=1'),
-                fetch('https://api.m-inbody.info/api/v1/items/type/EMBLEM?season=1'),
-                fetch('https://api.m-inbody.info/api/v1/items/type/ACC?season=1'),
-                fetch('https://api.m-inbody.info/api/v1/user_records/statistics?season=1')
+                fetch(urls.rankingsClasses),
+                fetch(urls.itemsWeapon),
+                fetch(urls.itemsArmor),
+                fetch(urls.itemsEmblem),
+                fetch(urls.itemsAcc),
+                fetch(urls.userStatistics)
             ]);
 
             const [classes, weapons, armors, emblems, accessories, stats] = await Promise.all([
@@ -1168,9 +1273,15 @@
 
         // 룬 선택/해제 (동일한 이름의 룬을 모두 선택/해제)
         function toggleRune(runeId) {
+            // 문자열 ID를 숫자로 변환 시도 (가상 룬은 문자열 그대로 유지)
+            const id = isNaN(runeId) ? runeId : Number(runeId);
+
             // 클릭한 룬의 정보 찾기
-            const clickedRune = AppState.allRunes.find(r => r.id === runeId);
-            if (!clickedRune) return;
+            const clickedRune = AppState.allRunes.find(r => r.id === id);
+            if (!clickedRune) {
+                console.error('룬을 찾을 수 없습니다:', id);
+                return;
+            }
 
             // 같은 이름과 타입을 가진 모든 룬 찾기
             const sameNameRunes = AppState.allRunes.filter(r =>
@@ -1594,7 +1705,7 @@
             actionButtons.insertAdjacentHTML('afterend', resultsHTML);
         }
 
-        // 모든 룬 데이터 통합
+        // 모든 룬 데이터 통합 (가상 룬 포함)
         function buildAllRunesArray() {
             const allRunes = [];
 
@@ -1605,43 +1716,53 @@
                 'ACC': '장신구'
             };
 
-            AppState.weapons.forEach(rune => {
+            // getUniqueRunes를 사용하여 가상 룬도 포함
+            const uniqueWeapons = getUniqueRunes(AppState.weapons, 'WEAPON');
+            const uniqueArmors = getUniqueRunes(AppState.armors, 'ARMOR');
+            const uniqueEmblems = getUniqueRunes(AppState.emblems, 'EMBLEM');
+            const uniqueAccessories = getUniqueRunes(AppState.accessories, 'ACC');
+
+            uniqueWeapons.forEach(rune => {
                 allRunes.push({
                     id: rune.id,
                     name: rune.name,
                     type: rune.type,
                     typeName: typeMap[rune.type],
-                    grade: rune.grade
+                    grade: rune.grade,
+                    inStatsData: rune.inStatsData
                 });
             });
 
-            AppState.armors.forEach(rune => {
+            uniqueArmors.forEach(rune => {
                 allRunes.push({
                     id: rune.id,
                     name: rune.name,
                     type: rune.type,
                     typeName: typeMap[rune.type],
-                    grade: rune.grade
+                    grade: rune.grade,
+                    inStatsData: rune.inStatsData
                 });
             });
 
-            AppState.emblems.forEach(rune => {
+            uniqueEmblems.forEach(rune => {
                 allRunes.push({
                     id: rune.id,
                     name: rune.name,
                     type: rune.type,
                     typeName: typeMap[rune.type],
-                    grade: rune.grade
+                    grade: rune.grade,
+                    inStatsData: rune.inStatsData
                 });
             });
 
-            AppState.accessories.forEach(rune => {
+            uniqueAccessories.forEach(rune => {
                 allRunes.push({
                     id: rune.id,
                     name: rune.name,
                     type: rune.type,
                     typeName: typeMap[rune.type],
-                    grade: rune.grade
+                    grade: rune.grade,
+                    inStatsData: rune.inStatsData
                 });
             });
 
@@ -1696,16 +1817,34 @@
                     r.name === rune.name && r.type === rune.type
                 );
                 const isSelected = sameNameRunes.some(r => AppState.selectedRunes.has(r.id));
+                const isMatched = isRuneMatched(rune.name, rune.type);
+                const isInIngame = isRuneInIngame(rune.name);
+                const displayName = normalizeRuneName(rune.name);
                 const typeClass = rune.type.toLowerCase();
+
+                // 상태 텍스트 결정
+                const isVirtualRune = rune.inStatsData === false;
+                let statusText = '';
+                let unmatchedItemClass = '';
+
+                if (isSelected) {
+                    statusText = '선택됨';
+                } else if (isVirtualRune) {
+                    statusText = '통계에 없음';
+                    unmatchedItemClass = 'unmatched-item';
+                } else if (rune.grade === 'LEGEND' && !isMatched) {
+                    statusText = '시즌룬 아님';
+                    unmatchedItemClass = 'unmatched-item';
+                }
                 return `
-                    <div class="autocomplete-item ${isSelected ? 'selected-item' : ''}"
+                    <div class="autocomplete-item ${isSelected ? 'selected-item' : ''} ${unmatchedItemClass}"
                          data-index="${index}"
                          data-rune-id="${rune.id}">
                         <div>
                             <span class="autocomplete-type ${typeClass}">${rune.typeName}</span>
-                            <span class="autocomplete-name">${rune.name}</span>
+                            <span class="autocomplete-name">${displayName}</span>
                         </div>
-                        <span class="autocomplete-status">${isSelected ? '선택됨' : ''}</span>
+                        <span class="autocomplete-status">${statusText}</span>
                     </div>
                 `;
             }).join('');
@@ -1868,16 +2007,16 @@
         // 섹션별 선택된 룬 개수 업데이트
         function updateSectionCounts() {
             const sections = [
-                { title: '무기 룬', data: AppState.weapons },
-                { title: '방어구 룬', data: AppState.armors },
-                { title: '장신구 룬', data: AppState.accessories },
-                { title: '앰블럼 룬', data: AppState.emblems }
+                { title: '무기 룬', data: AppState.weapons, type: 'WEAPON' },
+                { title: '방어구 룬', data: AppState.armors, type: 'ARMOR' },
+                { title: '장신구 룬', data: AppState.accessories, type: 'ACC' },
+                { title: '앰블럼 룬', data: AppState.emblems, type: 'EMBLEM' }
             ];
 
             document.querySelectorAll('.section-title').forEach((titleEl, index) => {
                 if (sections[index]) {
                     // 중복 제거된 룬 개수
-                    const uniqueRunes = getUniqueRunes(sections[index].data);
+                    const uniqueRunes = getUniqueRunes(sections[index].data, sections[index].type);
 
                     // 선택된 고유 룬 이름 개수
                     const selectedUniqueNames = new Set();
@@ -1898,13 +2037,43 @@
         }
 
         // 중복 제거: 같은 이름의 룬 중 첫 번째만 반환하고 정렬
-        function getUniqueRunes(runes) {
+        function getUniqueRunes(runes, runeType) {
             const uniqueRunes = [];
             const seen = new Set();
+
+            // 통계에 있는 룬 추가 (이름을 정규화하여 저장)
             for (const rune of runes) {
-                if (!seen.has(rune.name)) {
-                    seen.add(rune.name);
-                    uniqueRunes.push(rune);
+                const normalizedName = normalizeRuneName(rune.name);
+                const cleanedName = cleanRuneName(normalizedName);
+
+                if (!seen.has(cleanedName)) {
+                    seen.add(cleanedName);
+                    // 정규화된 이름으로 룬 객체 생성
+                    uniqueRunes.push({
+                        ...rune,
+                        name: normalizedName
+                    });
+                }
+            }
+
+            // 인게임에만 있는 룬 추가 (통계에 없는 룬)
+            const ingameOrder = INGAME_RUNE_ORDER[runeType];
+            if (ingameOrder) {
+                for (const ingameName of ingameOrder) {
+                    const cleanedIngameName = cleanRuneName(ingameName);
+
+                    // 통계에 이미 있는지 확인
+                    if (!seen.has(cleanedIngameName)) {
+                        // 통계에 없으면 추가 (가상 룬 객체 생성)
+                        uniqueRunes.push({
+                            id: `virtual-${runeType}-${ingameName}`,
+                            name: ingameName,
+                            type: runeType,
+                            grade: 'LEGEND',
+                            inStatsData: false // 통계에 없는 룬 표시
+                        });
+                        seen.add(cleanedIngameName);
+                    }
                 }
             }
 
@@ -1917,15 +2086,34 @@
                 'NORMAL': 5
             };
 
-            // 정렬: 1) 등급 우선, 2) 이름 가나다순
+            // 정렬: 1) 등급 우선, 2) LEGEND는 인게임 순서, 3) 이름 가나다순
             uniqueRunes.sort((a, b) => {
                 const gradeA = gradeOrder[a.grade] || 999;
                 const gradeB = gradeOrder[b.grade] || 999;
 
+                // 등급이 다르면 등급 우선
                 if (gradeA !== gradeB) {
                     return gradeA - gradeB;
                 }
 
+                // LEGEND 등급인 경우 인게임 순서로 정렬 (매치 여부 무관)
+                if (a.grade === 'LEGEND' && b.grade === 'LEGEND') {
+                    const indexA = getIngameRuneIndex(a.name, runeType);
+                    const indexB = getIngameRuneIndex(b.name, runeType);
+
+                    // 둘 다 인게임에 있거나 둘 다 없는 경우
+                    if ((indexA < 999999 && indexB < 999999) || (indexA === 999999 && indexB === 999999)) {
+                        if (indexA !== indexB) {
+                            return indexA - indexB;
+                        }
+                    }
+
+                    // 하나만 인게임에 있는 경우, 인게임에 있는 것 우선
+                    if (indexA < 999999 && indexB === 999999) return -1;
+                    if (indexA === 999999 && indexB < 999999) return 1;
+                }
+
+                // 나머지는 이름 가나다순
                 return a.name.localeCompare(b.name, 'ko');
             });
 
@@ -1941,10 +2129,10 @@
                 `<div class="cache-info">캐시된 데이터 사용 중 (${cacheAge}분 전 저장됨) | <a href="#" onclick="event.preventDefault(); refreshData();">새로고침</a></div>` : '';
 
             // 각 타입별로 중복 제거
-            const uniqueWeapons = getUniqueRunes(AppState.weapons);
-            const uniqueArmors = getUniqueRunes(AppState.armors);
-            const uniqueAccessories = getUniqueRunes(AppState.accessories);
-            const uniqueEmblems = getUniqueRunes(AppState.emblems);
+            const uniqueWeapons = getUniqueRunes(AppState.weapons, 'WEAPON');
+            const uniqueArmors = getUniqueRunes(AppState.armors, 'ARMOR');
+            const uniqueAccessories = getUniqueRunes(AppState.accessories, 'ACC');
+            const uniqueEmblems = getUniqueRunes(AppState.emblems, 'EMBLEM');
 
             const html = `
                 ${cacheInfo}
@@ -1952,9 +2140,6 @@
                 <div class="side-by-side-section">
                     <div class="side-section">
                         <div class="side-section-title">🔍 룬 검색</div>
-                        <div class="search-note">
-                            💡 안보이는 룬은 체단실 통계 데이터에 없는 룬입니다
-                        </div>
                         <div class="search-container">
                             <input type="text"
                                    id="searchInput"
@@ -1995,15 +2180,34 @@
                     <h2 class="section-title">무기 룬 (${uniqueWeapons.length}개)</h2>
                     <div class="rune-grid">
                         ${uniqueWeapons.map(weapon => {
+                            // 가상 룬인지 확인 (통계에 없는 인게임 룬)
+                            const isVirtualRune = weapon.inStatsData === false;
+
                             // 같은 이름의 룬 중 하나라도 선택되어 있는지 확인
                             const sameNameRunes = AppState.weapons.filter(w => w.name === weapon.name);
                             const isSelected = sameNameRunes.some(w => AppState.selectedRunes.has(w.id));
+                            const isMatched = isRuneMatched(weapon.name, 'WEAPON');
+                            const displayName = normalizeRuneName(weapon.name);
+
+                            // 클래스와 툴팁 결정
+                            let unmatchedClass = '';
+                            let tooltipText = '';
+                            if (weapon.grade === 'LEGEND') {
+                                if (isVirtualRune) {
+                                    unmatchedClass = 'no-stats';
+                                    tooltipText = '통계에 없음 (선택 가능)';
+                                } else if (!isMatched) {
+                                    unmatchedClass = 'unmatched';
+                                    tooltipText = '시즌룬 아님';
+                                }
+                            }
+
                             return `
-                                <div class="rune-item ${weapon.grade.toLowerCase()} ${isSelected ? 'selected' : ''}"
+                                <div class="rune-item ${weapon.grade.toLowerCase()} ${isSelected ? 'selected' : ''} ${unmatchedClass}"
                                      data-rune-id="${weapon.id}"
                                      data-rune-type="WEAPON"
-                                     onclick="toggleRune(${weapon.id})">
-                                    <div class="rune-name">${weapon.name}</div>
+                                     onclick="toggleRune('${weapon.id}')">
+                                    <div class="rune-name">${displayName}</div>
                                     <div class="rune-grade">${weapon.grade}</div>
                                 </div>
                             `;
@@ -2015,14 +2219,28 @@
                     <h2 class="section-title">방어구 룬 (${uniqueArmors.length}개)</h2>
                     <div class="rune-grid">
                         ${uniqueArmors.map(armor => {
+                            const isVirtualRune = armor.inStatsData === false;
                             const sameNameRunes = AppState.armors.filter(a => a.name === armor.name);
                             const isSelected = sameNameRunes.some(a => AppState.selectedRunes.has(a.id));
+                            const isMatched = isRuneMatched(armor.name, 'ARMOR');
+                            const displayName = normalizeRuneName(armor.name);
+                            let unmatchedClass = '';
+                            let tooltipText = '';
+                            if (armor.grade === 'LEGEND') {
+                                if (isVirtualRune) {
+                                    unmatchedClass = 'no-stats';
+                                    tooltipText = '통계에 없음 (선택 가능)';
+                                } else if (!isMatched) {
+                                    unmatchedClass = 'unmatched';
+                                    tooltipText = '시즌룬 아님';
+                                }
+                            }
                             return `
-                                <div class="rune-item ${armor.grade.toLowerCase()} ${isSelected ? 'selected' : ''}"
+                                <div class="rune-item ${armor.grade.toLowerCase()} ${isSelected ? 'selected' : ''} ${unmatchedClass}"
                                      data-rune-id="${armor.id}"
                                      data-rune-type="ARMOR"
-                                     onclick="toggleRune(${armor.id})">
-                                    <div class="rune-name">${armor.name}</div>
+                                     onclick="toggleRune('${armor.id}')">
+                                    <div class="rune-name">${displayName}</div>
                                     <div class="rune-grade">${armor.grade}</div>
                                 </div>
                             `;
@@ -2034,14 +2252,31 @@
                     <h2 class="section-title">장신구 룬 (${uniqueAccessories.length}개)</h2>
                     <div class="rune-grid">
                         ${uniqueAccessories.map(accessory => {
+                            const isVirtualRune = accessory.inStatsData === false;
+
                             const sameNameRunes = AppState.accessories.filter(a => a.name === accessory.name);
                             const isSelected = sameNameRunes.some(a => AppState.selectedRunes.has(a.id));
+                            const isMatched = isRuneMatched(accessory.name, 'ACC');
+                            const displayName = normalizeRuneName(accessory.name);
+
+                            let unmatchedClass = '';
+                            let tooltipText = '';
+                            if (accessory.grade === 'LEGEND') {
+                                if (isVirtualRune) {
+                                    unmatchedClass = 'no-stats';
+                                    tooltipText = '통계에 없음 (선택 가능)';
+                                } else if (!isMatched) {
+                                    unmatchedClass = 'unmatched';
+                                    tooltipText = '시즌룬 아님';
+                                }
+                            }
+
                             return `
-                                <div class="rune-item ${accessory.grade.toLowerCase()} ${isSelected ? 'selected' : ''}"
+                                <div class="rune-item ${accessory.grade.toLowerCase()} ${isSelected ? 'selected' : ''} ${unmatchedClass}"
                                      data-rune-id="${accessory.id}"
                                      data-rune-type="ACC"
-                                     onclick="toggleRune(${accessory.id})">
-                                    <div class="rune-name">${accessory.name}</div>
+                                     onclick="toggleRune('${accessory.id}')">
+                                    <div class="rune-name">${displayName}</div>
                                     <div class="rune-grade">${accessory.grade}</div>
                                 </div>
                             `;
@@ -2053,14 +2288,31 @@
                     <h2 class="section-title">앰블럼 룬 (${uniqueEmblems.length}개)</h2>
                     <div class="rune-grid">
                         ${uniqueEmblems.map(emblem => {
+                            const isVirtualRune = emblem.inStatsData === false;
+
                             const sameNameRunes = AppState.emblems.filter(e => e.name === emblem.name);
                             const isSelected = sameNameRunes.some(e => AppState.selectedRunes.has(e.id));
+                            const isMatched = isRuneMatched(emblem.name, 'EMBLEM');
+                            const displayName = normalizeRuneName(emblem.name);
+
+                            let unmatchedClass = '';
+                            let tooltipText = '';
+                            if (emblem.grade === 'LEGEND') {
+                                if (isVirtualRune) {
+                                    unmatchedClass = 'no-stats';
+                                    tooltipText = '통계에 없음 (선택 가능)';
+                                } else if (!isMatched) {
+                                    unmatchedClass = 'unmatched';
+                                    tooltipText = '시즌룬 아님';
+                                }
+                            }
+
                             return `
-                                <div class="rune-item ${emblem.grade.toLowerCase()} ${isSelected ? 'selected' : ''}"
+                                <div class="rune-item ${emblem.grade.toLowerCase()} ${isSelected ? 'selected' : ''} ${unmatchedClass}"
                                      data-rune-id="${emblem.id}"
                                      data-rune-type="EMBLEM"
-                                     onclick="toggleRune(${emblem.id})">
-                                    <div class="rune-name">${emblem.name}</div>
+                                     onclick="toggleRune('${emblem.id}')">
+                                    <div class="rune-name">${displayName}</div>
                                     <div class="rune-grade">${emblem.grade}</div>
                                 </div>
                             `;
