@@ -943,14 +943,25 @@
             border-bottom: none;
         }
 
-        .autocomplete-item:hover,
-        .autocomplete-item.active {
+        .autocomplete-item:hover {
             background: #faf5ff;
+        }
+
+        .autocomplete-item.active {
+            background: linear-gradient(to right, #e9d5ff 0%, #f3e8ff 100%);
+            border-left: 4px solid #9f7aea;
+            box-shadow: 0 2px 8px rgba(159, 122, 234, 0.2);
         }
 
         .autocomplete-item.selected-item {
             background: linear-gradient(to right, #f3e8ff 0%, #faf5ff 100%);
             border-left: 3px solid #b794f6;
+        }
+
+        .autocomplete-item.selected-item.active {
+            background: linear-gradient(to right, #e9d5ff 0%, #f3e8ff 100%);
+            border-left: 4px solid #9f7aea;
+            box-shadow: 0 2px 8px rgba(159, 122, 234, 0.3);
         }
 
         .autocomplete-type {
@@ -1377,8 +1388,9 @@
 
         // 룬 UI 업데이트
         function updateRuneUI(runeId) {
-            // 메인 목록의 룬 업데이트
-            const runeElements = document.querySelectorAll(`[data-rune-id="${runeId}"]`);
+            // 메인 목록의 룬 업데이트 (문자열 ID 이스케이프 처리)
+            const escapedId = CSS.escape(String(runeId));
+            const runeElements = document.querySelectorAll(`[data-rune-id="${escapedId}"]`);
             runeElements.forEach(runeElement => {
                 if (runeElement.classList.contains('rune-item')) {
                     // 메인 목록의 룬 아이템
@@ -1916,14 +1928,15 @@
                 let statusText = '';
                 let unmatchedItemClass = '';
 
-                if (isSelected) {
-                    statusText = '선택됨';
-                } else if (isVirtualRune) {
-                    statusText = '통계에 없음';
+                // 선택됨 상태와 다른 상태를 함께 표시
+                if (isVirtualRune) {
+                    statusText = isSelected ? '선택됨 · 통계에 없음' : '통계에 없음';
                     unmatchedItemClass = 'unmatched-item';
                 } else if (rune.grade === 'LEGEND' && !isMatched) {
-                    statusText = '시즌룬 아님';
+                    statusText = isSelected ? '선택됨 · 시즌룬 아님' : '시즌룬 아님';
                     unmatchedItemClass = 'unmatched-item';
+                } else if (isSelected) {
+                    statusText = '선택됨';
                 }
                 return `
                     <div class="autocomplete-item ${isSelected ? 'selected-item' : ''} ${unmatchedItemClass}"
@@ -1944,7 +1957,9 @@
             // 클릭 이벤트 추가
             dropdown.querySelectorAll('.autocomplete-item').forEach(item => {
                 item.addEventListener('click', () => {
-                    const runeId = parseInt(item.dataset.runeId);
+                    const runeIdStr = item.dataset.runeId;
+                    // 숫자 ID는 숫자로 변환, 문자열 ID(가상 룬)는 그대로 유지
+                    const runeId = isNaN(runeIdStr) ? runeIdStr : parseInt(runeIdStr);
                     selectRuneFromSearch(runeId);
                 });
 
@@ -1959,10 +1974,16 @@
         function selectRuneFromSearch(runeId) {
             toggleRune(runeId);
 
-            // 검색 결과 업데이트
+            // 검색 결과 닫기
+            const dropdown = document.getElementById('autocompleteDropdown');
+            if (dropdown) {
+                dropdown.classList.remove('visible');
+            }
+
+            // 검색 입력창 포커스 유지
             const searchInput = document.getElementById('searchInput');
-            if (searchInput && searchInput.value) {
-                handleSearch(searchInput.value);
+            if (searchInput) {
+                searchInput.focus();
             }
         }
 
@@ -1985,6 +2006,16 @@
         // 키보드 네비게이션
         function handleKeyboard(event) {
             const dropdown = document.getElementById('autocompleteDropdown');
+            const searchInput = document.getElementById('searchInput');
+
+            // 엔터 키 또는 아래 키: 드롭다운이 닫혀있으면 다시 검색
+            if ((event.key === 'Enter' || event.key === 'ArrowDown') && !dropdown.classList.contains('visible')) {
+                event.preventDefault();
+                if (searchInput && searchInput.value) {
+                    handleSearch(searchInput.value);
+                }
+                return;
+            }
 
             if (!dropdown.classList.contains('visible')) {
                 return;
