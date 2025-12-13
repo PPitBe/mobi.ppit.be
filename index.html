@@ -1826,7 +1826,10 @@
 
             const resultsHTML = `
                 <div class="results" id="results">
-                    <h2 class="results-title">추천 직업 (상위 ${Math.min(jobScores.length, 20)}개)</h2>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                        <h2 class="results-title" style="margin-bottom: 0;">추천 직업 (상위 ${Math.min(jobScores.length, 20)}개)</h2>
+                        <button class="btn btn-secondary btn-small" onclick="copyShareLink()" style="white-space: nowrap;">🔗 공유 링크 복사</button>
+                    </div>
                     ${jobScores.slice(0, 5).map((job, index) => `
                         <div class="job-result ${index === 0 ? 'top-result' : ''}">
                             <div class="job-header">
@@ -2639,6 +2642,64 @@
             }
         }
 
+        // URL 파라미터에서 룬 정보 인코딩/디코딩
+        function encodeRunesToURL() {
+            const runeIds = Array.from(AppState.selectedRunes);
+            if (runeIds.length === 0) return '';
+
+            // 룬 ID들을 콤마로 구분하여 압축
+            const encoded = runeIds.join(',');
+            return encodeURIComponent(encoded);
+        }
+
+        function decodeRunesFromURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const runesParam = urlParams.get('runes');
+
+            if (!runesParam) return new Set();
+
+            try {
+                const runeIds = decodeURIComponent(runesParam).split(',');
+                return new Set(runeIds.filter(id => id.trim() !== ''));
+            } catch (error) {
+                console.error('URL 파라미터 디코딩 오류:', error);
+                return new Set();
+            }
+        }
+
+        function generateShareLink() {
+            const encoded = encodeRunesToURL();
+            if (!encoded) {
+                alert('선택된 룬이 없습니다.');
+                return null;
+            }
+
+            const baseUrl = window.location.origin + window.location.pathname;
+            return `${baseUrl}?runes=${encoded}`;
+        }
+
+        function copyShareLink() {
+            const shareLink = generateShareLink();
+            if (!shareLink) return;
+
+            navigator.clipboard.writeText(shareLink).then(() => {
+                // 버튼 텍스트 임시 변경으로 피드백 제공
+                const btn = event.target;
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '✅ 복사됨!';
+                btn.style.background = 'linear-gradient(135deg, #68d391 0%, #48bb78 100%)';
+
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.style.background = '';
+                }, 2000);
+            }).catch(err => {
+                console.error('클립보드 복사 실패:', err);
+                // 폴백: 프롬프트로 표시
+                prompt('아래 링크를 복사하세요:', shareLink);
+            });
+        }
+
         // 초기화
         async function init() {
             try {
@@ -2654,10 +2715,27 @@
                 // 모든 룬 데이터 통합 (가상 룬 포함)
                 buildAllRunesArray();
 
-                // 저장된 선택 룬 불러오기 (AppState.allRunes가 준비된 후)
-                AppState.selectedRunes = CacheManager.loadSelectedRunes();
+                // URL 파라미터에서 룬 정보 로드 시도
+                const runesFromURL = decodeRunesFromURL();
+
+                if (runesFromURL.size > 0) {
+                    // URL 파라미터가 있으면 그것을 사용
+                    AppState.selectedRunes = runesFromURL;
+                    // URL 파라미터로 로드된 경우 캐시에도 저장
+                    CacheManager.saveSelectedRunes(AppState.selectedRunes);
+                } else {
+                    // URL 파라미터가 없으면 저장된 선택 룬 불러오기
+                    AppState.selectedRunes = CacheManager.loadSelectedRunes();
+                }
 
                 renderUI();
+
+                // URL 파라미터로 룬이 로드되었으면 자동으로 추천 계산
+                if (runesFromURL.size > 0) {
+                    setTimeout(() => {
+                        calculateRecommendations();
+                    }, 500);
+                }
             } catch (error) {
                 console.error('초기화 오류:', error);
                 console.error('오류 상세:', error.message);
