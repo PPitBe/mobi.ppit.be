@@ -1165,8 +1165,16 @@
 
             saveSelectedRunes(selectedRunes) {
                 try {
-                    const runesArray = Array.from(selectedRunes);
-                    localStorage.setItem(this.SELECTED_RUNES_KEY, JSON.stringify(runesArray));
+                    // ID 대신 {name, type} 객체 배열로 저장
+                    const runesData = Array.from(selectedRunes).map(runeId => {
+                        const rune = AppState.allRunes.find(r => r.id === runeId);
+                        if (rune) {
+                            return { name: rune.name, type: rune.type };
+                        }
+                        return null;
+                    }).filter(r => r !== null);
+
+                    localStorage.setItem(this.SELECTED_RUNES_KEY, JSON.stringify(runesData));
                 } catch (e) {
                     console.error('선택된 룬 저장 실패:', e);
                 }
@@ -1176,8 +1184,48 @@
                 try {
                     const saved = localStorage.getItem(this.SELECTED_RUNES_KEY);
                     if (!saved) return new Set();
-                    const runesArray = JSON.parse(saved);
-                    return new Set(runesArray);
+
+                    const parsedData = JSON.parse(saved);
+                    const selectedIds = new Set();
+                    let needsMigration = false;
+
+                    // 데이터 형식 확인 및 마이그레이션
+                    if (Array.isArray(parsedData) && parsedData.length > 0) {
+                        // 첫 번째 요소로 데이터 형식 판단
+                        const firstItem = parsedData[0];
+
+                        if (typeof firstItem === 'object' && firstItem.name && firstItem.type) {
+                            // 새 버전: {name, type} 객체 배열
+                            parsedData.forEach(({ name, type }) => {
+                                const matchingRunes = AppState.allRunes.filter(r =>
+                                    r.name === name && r.type === type
+                                );
+                                matchingRunes.forEach(rune => selectedIds.add(rune.id));
+                            });
+                        } else {
+                            // 구 버전: ID 배열 → 마이그레이션 필요
+                            console.log('이전 버전 데이터 감지: 마이그레이션 시작');
+                            needsMigration = true;
+
+                            parsedData.forEach(oldId => {
+                                // ID로 룬 찾기 (숫자 또는 문자열 ID)
+                                const id = isNaN(oldId) ? oldId : Number(oldId);
+                                const rune = AppState.allRunes.find(r => r.id === id);
+
+                                if (rune) {
+                                    selectedIds.add(rune.id);
+                                }
+                            });
+
+                            // 마이그레이션: 새 형식으로 다시 저장
+                            if (selectedIds.size > 0) {
+                                this.saveSelectedRunes(selectedIds);
+                                console.log('마이그레이션 완료: 새 형식으로 저장됨');
+                            }
+                        }
+                    }
+
+                    return selectedIds;
                 } catch (e) {
                     console.error('선택된 룬 로드 실패:', e);
                     return new Set();
@@ -1188,9 +1236,18 @@
             savePreset(name, selectedRunes) {
                 try {
                     const presets = this.loadPresets();
-                    const runesArray = Array.from(selectedRunes);
+
+                    // ID 대신 {name, type} 객체 배열로 저장
+                    const runesData = Array.from(selectedRunes).map(runeId => {
+                        const rune = AppState.allRunes.find(r => r.id === runeId);
+                        if (rune) {
+                            return { name: rune.name, type: rune.type };
+                        }
+                        return null;
+                    }).filter(r => r !== null);
+
                     presets[name] = {
-                        runes: runesArray,
+                        runes: runesData,
                         timestamp: Date.now()
                     };
                     localStorage.setItem(this.PRESETS_KEY, JSON.stringify(presets));
@@ -1409,11 +1466,43 @@
                 el.classList.remove('selected');
             });
 
-            // 프리셋의 룬 선택
-            preset.runes.forEach(runeId => {
-                AppState.selectedRunes.add(runeId);
-                updateRuneUI(runeId);
-            });
+            // 프리셋의 룬 선택 (데이터 형식 확인 및 마이그레이션)
+            let needsMigration = false;
+
+            if (preset.runes && preset.runes.length > 0) {
+                const firstItem = preset.runes[0];
+
+                if (typeof firstItem === 'object' && firstItem.name && firstItem.type) {
+                    // 새 버전: {name, type} 객체 배열
+                    preset.runes.forEach(({ name, type }) => {
+                        const matchingRunes = AppState.allRunes.filter(r =>
+                            r.name === name && r.type === type
+                        );
+                        matchingRunes.forEach(rune => {
+                            AppState.selectedRunes.add(rune.id);
+                            updateRuneUI(rune.id);
+                        });
+                    });
+                } else {
+                    // 구 버전: ID 배열 → 마이그레이션
+                    console.log(`프리셋 "${name}" 이전 버전 데이터 감지: 마이그레이션 시작`);
+                    needsMigration = true;
+
+                    preset.runes.forEach(oldId => {
+                        const id = isNaN(oldId) ? oldId : Number(oldId);
+                        const rune = AppState.allRunes.find(r => r.id === id);
+
+                        if (rune) {
+                            AppState.selectedRunes.add(rune.id);
+                            updateRuneUI(rune.id);
+                        }
+                    });
+
+                    // 마이그레이션: 새 형식으로 프리셋 다시 저장
+                    CacheManager.savePreset(name, AppState.selectedRunes);
+                    console.log(`프리셋 "${name}" 마이그레이션 완료`);
+                }
+            }
 
             CacheManager.saveSelectedRunes(AppState.selectedRunes);
             updateSelectedCount();
@@ -2362,9 +2451,6 @@
         // 초기화
         async function init() {
             try {
-                // 저장된 선택 룬 불러오기
-                AppState.selectedRunes = CacheManager.loadSelectedRunes();
-
                 const data = await loadAllData();
 
                 AppState.classes = data.classes || [];
@@ -2374,8 +2460,11 @@
                 AppState.accessories = data.accessories || [];
                 AppState.statistics = data.statistics || [];
 
-                // 모든 룬 데이터 통합
+                // 모든 룬 데이터 통합 (가상 룬 포함)
                 buildAllRunesArray();
+
+                // 저장된 선택 룬 불러오기 (AppState.allRunes가 준비된 후)
+                AppState.selectedRunes = CacheManager.loadSelectedRunes();
 
                 renderUI();
             } catch (error) {
