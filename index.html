@@ -1827,8 +1827,8 @@
             const resultsHTML = `
                 <div class="results" id="results">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                        <h2 class="results-title" style="margin-bottom: 0;">추천 직업 (상위 ${Math.min(jobScores.length, 20)}개)</h2>
-                        <button class="btn btn-secondary btn-small" onclick="copyShareLink()" style="white-space: nowrap;">🔗 공유 링크 복사</button>
+                        <h2 class="results-title" style="margin: 0;">추천 직업 (상위 ${Math.min(jobScores.length, 20)}개)</h2>
+                        <button class="btn btn-secondary" onclick="copyShareLink()" style="padding: 8px 16px;">🔗 공유 링크 복사</button>
                     </div>
                     ${jobScores.slice(0, 5).map((job, index) => `
                         <div class="job-result ${index === 0 ? 'top-result' : ''}">
@@ -1874,6 +1874,443 @@
             `;
 
             actionButtons.insertAdjacentHTML('afterend', resultsHTML);
+        }
+
+        // 공유 링크 복사
+        function copyShareLink() {
+            // 전체 고유 룬 개수 계산 (name+type 기준 중복 제거)
+            const allUniqueRunes = new Map();
+            AppState.allRunes.forEach(rune => {
+                const key = `${rune.name}-${rune.type}`;
+                if (!allUniqueRunes.has(key)) {
+                    allUniqueRunes.set(key, rune);
+                }
+            });
+
+            // 선택된 고유 룬 수집
+            const selectedUniqueRunes = new Map();
+            AppState.selectedRunes.forEach(runeId => {
+                const rune = AppState.allRunes.find(r => r.id === runeId);
+                if (rune) {
+                    const key = `${rune.name}-${rune.type}`;
+                    if (!selectedUniqueRunes.has(key)) {
+                        selectedUniqueRunes.set(key, rune);
+                    }
+                }
+            });
+
+            const totalCount = allUniqueRunes.size;
+            const selectedCount = selectedUniqueRunes.size;
+
+            // R 값 결정: 절반 이상 선택되었으면 1, 아니면 0
+            const reverseMode = selectedCount >= totalCount / 2 ? 1 : 0;
+
+            // R=1일 경우 선택되지 않은 룬, R=0일 경우 선택된 룬
+            const targetRunes = reverseMode === 1
+                ? Array.from(allUniqueRunes.values()).filter(rune => {
+                    const key = `${rune.name}-${rune.type}`;
+                    return !selectedUniqueRunes.has(key);
+                })
+                : Array.from(selectedUniqueRunes.values());
+
+            // 타입별로 룬 ID 변환 및 정렬
+            const runesByType = {
+                'WEAPON': [],
+                'ARMOR': [],
+                'ACC': [],
+                'EMBLEM': []
+            };
+
+            targetRunes.forEach(rune => {
+                let id36;
+                if (typeof rune.id === 'number') {
+                    // 36진수로 변환
+                    id36 = rune.id.toString(36);
+                } else {
+                    // 문자열 ID (가상 룬)는 해시 후 36진수로 변환
+                    let hash = 0;
+                    for (let i = 0; i < rune.id.length; i++) {
+                        hash = ((hash << 5) - hash) + rune.id.charCodeAt(i);
+                        hash = hash & hash;
+                    }
+                    id36 = 'v' + Math.abs(hash).toString(36);
+                }
+
+                runesByType[rune.type].push({ id: rune.id, id36: id36 });
+            });
+
+            // 각 타입별로 범위 압축 적용 (고정 순서: WEAPON, ARMOR, ACC, EMBLEM)
+            const compressedParts = [];
+
+            ['WEAPON', 'ARMOR', 'ACC', 'EMBLEM'].forEach(type => {
+                const runes = runesByType[type];
+
+                // 숫자 ID와 가상 룬 분리
+                const numericRunes = runes.filter(r => typeof r.id === 'number').sort((a, b) => a.id - b.id);
+                const virtualRunes = runes.filter(r => typeof r.id === 'string');
+
+                const compressed = [];
+
+                // 숫자 ID 범위 압축
+                if (numericRunes.length > 0) {
+                    let i = 0;
+                    while (i < numericRunes.length) {
+                        const start = numericRunes[i].id;
+                        const startId36 = numericRunes[i].id36;
+                        let end = start;
+                        let count = 1;
+
+                        // 연속된 ID 찾기
+                        while (i + count < numericRunes.length && numericRunes[i + count].id === end + 1) {
+                            end++;
+                            count++;
+                        }
+
+                        if (count >= 3) {
+                            // 3개 이상 연속이면 범위로 표현: start_count
+                            compressed.push(`${startId36}_${count.toString(36)}`);
+                        } else {
+                            // 개별로 표현
+                            for (let j = 0; j < count; j++) {
+                                compressed.push(numericRunes[i + j].id36);
+                            }
+                        }
+
+                        i += count;
+                    }
+                }
+
+                // 가상 룬 추가
+                virtualRunes.forEach(r => compressed.push(r.id36));
+
+                // 타입별 데이터 추가 (빈 배열이면 빈 문자열)
+                compressedParts.push(compressed.join('.'));
+            });
+
+            // URL 파라미터 구성
+            const params = new URLSearchParams();
+
+            // S는 1이 아닐 때만 추가
+            if (API_CONFIG.SEASON !== 1) {
+                params.append('S', API_CONFIG.SEASON);
+            }
+
+            params.append('R', reverseMode);
+
+            if (compressedParts.length > 0) {
+                params.append('D', compressedParts.join('-'));
+            }
+
+            const shareUrl = `${window.location.origin}${window.location.pathname}?${params.toString()}`;
+
+            // 클립보드에 복사
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                alert('공유 링크가 클립보드에 복사되었습니다!');
+            }).catch(err => {
+                console.error('클립보드 복사 실패:', err);
+                // 폴백: 프롬프트로 표시
+                prompt('공유 링크:', shareUrl);
+            });
+        }
+
+        // URL 파라미터에서 룬 불러오기
+        function loadRunesFromUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+
+            // 최신 형식: S, R, D 파라미터 (36진수 + 범위 압축)
+            const seasonParam = urlParams.get('S');
+            const reverseModeParam = urlParams.get('R');
+            const dataParam = urlParams.get('D');
+
+            if (dataParam) {
+                try {
+                    const reverseMode = reverseModeParam === '1';
+
+                    // 가상 룬 해시 맵 생성 (36진수용)
+                    const virtualRuneHashMap = new Map();
+                    AppState.allRunes.forEach(rune => {
+                        if (typeof rune.id === 'string') {
+                            let hash = 0;
+                            for (let i = 0; i < rune.id.length; i++) {
+                                hash = ((hash << 5) - hash) + rune.id.charCodeAt(i);
+                                hash = hash & hash;
+                            }
+                            const id36 = 'v' + Math.abs(hash).toString(36);
+                            virtualRuneHashMap.set(id36, rune.id);
+                        }
+                    });
+
+                    // URL에서 지정된 룬들 수집
+                    const specifiedRunes = new Set();
+
+                    // '-'로 타입 분리 (고정 순서: WEAPON, ARMOR, ACC, EMBLEM)
+                    const typeParts = dataParam.split('-');
+                    const types = ['WEAPON', 'ARMOR', 'ACC', 'EMBLEM'];
+
+                    typeParts.forEach((idsString, index) => {
+                        if (index >= types.length) return;
+                        const type = types[index];
+
+                        if (!idsString) return; // 빈 문자열이면 스킵
+
+                        const ids = idsString.split('.');
+
+                        ids.forEach(idStr => {
+                            // 범위 표현인지 확인 (start_count)
+                            if (idStr.includes('_') && !idStr.startsWith('v')) {
+                                const [startId36, countStr] = idStr.split('_');
+                                const startId = parseInt(startId36, 36);
+                                const count = parseInt(countStr, 36);
+
+                                // 범위 내 모든 ID 추가
+                                for (let i = 0; i < count; i++) {
+                                    const id = startId + i;
+                                    const rune = AppState.allRunes.find(r => r.id === id && r.type === type);
+                                    if (rune) {
+                                        const key = `${rune.name}-${rune.type}`;
+                                        specifiedRunes.add(key);
+                                    }
+                                }
+                            } else if (idStr.startsWith('v')) {
+                                // 가상 룬
+                                const actualId = virtualRuneHashMap.get(idStr);
+                                if (actualId) {
+                                    const rune = AppState.allRunes.find(r => r.id === actualId);
+                                    if (rune) {
+                                        const key = `${rune.name}-${rune.type}`;
+                                        specifiedRunes.add(key);
+                                    }
+                                }
+                            } else {
+                                // 일반 ID (36진수를 10진수로 변환)
+                                const id = parseInt(idStr, 36);
+                                const rune = AppState.allRunes.find(r => r.id === id && r.type === type);
+                                if (rune) {
+                                    const key = `${rune.name}-${rune.type}`;
+                                    specifiedRunes.add(key);
+                                }
+                            }
+                        });
+                    });
+
+                    // 선택 초기화
+                    AppState.selectedRunes.clear();
+
+                    // R=0: 지정된 룬들 선택, R=1: 지정되지 않은 룬들 선택
+                    AppState.allRunes.forEach(rune => {
+                        const key = `${rune.name}-${rune.type}`;
+                        const isSpecified = specifiedRunes.has(key);
+
+                        if ((reverseMode && !isSpecified) || (!reverseMode && isSpecified)) {
+                            AppState.selectedRunes.add(rune.id);
+                        }
+                    });
+
+                    // UI 업데이트
+                    renderUI();
+
+                    // 자동으로 추천 계산 실행
+                    if (AppState.selectedRunes.size > 0) {
+                        setTimeout(() => {
+                            calculateRecommendations();
+                            setTimeout(() => {
+                                const resultsElement = document.getElementById('results');
+                                if (resultsElement) {
+                                    resultsElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                }
+                            }, 100);
+                        }, 100);
+                    }
+
+                    return true;
+                } catch (err) {
+                    console.error('최신 형식 URL 파라미터 파싱 실패:', err);
+                }
+            }
+
+            // 구 형식: S, R, W, A, C, E 파라미터
+            const weaponParam = urlParams.get('W');
+            const armorParam = urlParams.get('A');
+            const accParam = urlParams.get('C');
+            const emblemParam = urlParams.get('E');
+
+            if (seasonParam || weaponParam || armorParam || accParam || emblemParam) {
+                try {
+                    const reverseMode = reverseModeParam === '1';
+
+                    // 가상 룬 해시 맵 생성 (역변환용)
+                    const virtualRuneHashMap = new Map();
+                    AppState.allRunes.forEach(rune => {
+                        if (typeof rune.id === 'string') {
+                            let hash = 0;
+                            for (let i = 0; i < rune.id.length; i++) {
+                                hash = ((hash << 5) - hash) + rune.id.charCodeAt(i);
+                                hash = hash & hash;
+                            }
+                            const hexId = 'v' + Math.abs(hash).toString(16);
+                            virtualRuneHashMap.set(hexId, rune.id);
+                        }
+                    });
+
+                    // URL에서 지정된 룬들 수집 (R=0이면 선택할 룬, R=1이면 제외할 룬)
+                    const specifiedRunes = new Set();
+
+                    // 타입별 파라미터 처리
+                    const typeParams = [
+                        { param: weaponParam, type: 'WEAPON' },
+                        { param: armorParam, type: 'ARMOR' },
+                        { param: accParam, type: 'ACC' },
+                        { param: emblemParam, type: 'EMBLEM' }
+                    ];
+
+                    typeParams.forEach(({ param, type }) => {
+                        if (param) {
+                            const hexIds = param.split('_'); // 구분자를 _로 변경
+                            hexIds.forEach(hexId => {
+                                // 가상 룬인지 확인
+                                if (hexId.startsWith('v')) {
+                                    const actualId = virtualRuneHashMap.get(hexId);
+                                    if (actualId) {
+                                        const rune = AppState.allRunes.find(r => r.id === actualId);
+                                        if (rune) {
+                                            const key = `${rune.name}-${rune.type}`;
+                                            specifiedRunes.add(key);
+                                        }
+                                    }
+                                } else {
+                                    // 16진수를 10진수로 변환
+                                    const decimalId = parseInt(hexId, 16);
+                                    const rune = AppState.allRunes.find(r => r.id === decimalId && r.type === type);
+                                    if (rune) {
+                                        const key = `${rune.name}-${rune.type}`;
+                                        specifiedRunes.add(key);
+                                    }
+                                }
+                            });
+                        }
+                    });
+
+                    // 선택 초기화
+                    AppState.selectedRunes.clear();
+
+                    // R=0: 지정된 룬들 선택
+                    // R=1: 지정되지 않은 룬들 선택
+                    AppState.allRunes.forEach(rune => {
+                        const key = `${rune.name}-${rune.type}`;
+                        const isSpecified = specifiedRunes.has(key);
+
+                        // reverseMode가 true면 지정되지 않은 것을 선택, false면 지정된 것을 선택
+                        if ((reverseMode && !isSpecified) || (!reverseMode && isSpecified)) {
+                            AppState.selectedRunes.add(rune.id);
+                        }
+                    });
+
+                    // UI 업데이트
+                    renderUI();
+
+                    // 자동으로 추천 계산 실행
+                    if (AppState.selectedRunes.size > 0) {
+                        setTimeout(() => {
+                            calculateRecommendations();
+                            // 추천 결과로 스크롤
+                            setTimeout(() => {
+                                const resultsElement = document.getElementById('results');
+                                if (resultsElement) {
+                                    resultsElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                }
+                            }, 100);
+                        }, 100);
+                    }
+
+                    return true;
+                } catch (err) {
+                    console.error('URL 파라미터 파싱 실패:', err);
+                }
+            }
+
+            // 구 형식 (하위 호환성): r 파라미터
+            const encodedParam = urlParams.get('r');
+            if (encodedParam) {
+                try {
+                    const decoded = decodeURIComponent(Array.prototype.map.call(atob(encodedParam), (c) => {
+                        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                    }).join(''));
+
+                    const typeMap = { 'W': 'WEAPON', 'A': 'ARMOR', 'C': 'ACC', 'E': 'EMBLEM' };
+                    const runesData = decoded.split(',').map(item => {
+                        const [name, typeCode] = item.split(':');
+                        return { name, type: typeMap[typeCode] };
+                    });
+
+                    AppState.selectedRunes.clear();
+
+                    runesData.forEach(({ name, type }) => {
+                        const matchingRunes = AppState.allRunes.filter(r =>
+                            r.name === name && r.type === type
+                        );
+                        matchingRunes.forEach(rune => {
+                            AppState.selectedRunes.add(rune.id);
+                        });
+                    });
+
+                    renderUI();
+
+                    if (AppState.selectedRunes.size > 0) {
+                        setTimeout(() => {
+                            calculateRecommendations();
+                            setTimeout(() => {
+                                const resultsElement = document.getElementById('results');
+                                if (resultsElement) {
+                                    resultsElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                }
+                            }, 100);
+                        }, 100);
+                    }
+
+                    return true;
+                } catch (err) {
+                    console.error('구 형식 URL 파라미터 파싱 실패:', err);
+                }
+            }
+
+            // 더 구 형식 (하위 호환성): runes 파라미터
+            const runesParam = urlParams.get('runes');
+            if (runesParam) {
+                try {
+                    const runesData = JSON.parse(decodeURIComponent(runesParam));
+
+                    AppState.selectedRunes.clear();
+
+                    runesData.forEach(({ name, type }) => {
+                        const matchingRunes = AppState.allRunes.filter(r =>
+                            r.name === name && r.type === type
+                        );
+                        matchingRunes.forEach(rune => {
+                            AppState.selectedRunes.add(rune.id);
+                        });
+                    });
+
+                    renderUI();
+
+                    if (AppState.selectedRunes.size > 0) {
+                        setTimeout(() => {
+                            calculateRecommendations();
+                            setTimeout(() => {
+                                const resultsElement = document.getElementById('results');
+                                if (resultsElement) {
+                                    resultsElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                }
+                            }, 100);
+                        }, 100);
+                    }
+
+                    return true;
+                } catch (err) {
+                    console.error('더 구 형식 URL 파라미터 파싱 실패:', err);
+                }
+            }
+
+            return false;
         }
 
         // 모든 룬 데이터 통합 (가상 룬 포함)
@@ -2642,69 +3079,6 @@
             }
         }
 
-        // URL 파라미터에서 룬 정보 인코딩/디코딩
-        function encodeRunesToURL() {
-            const runeIds = Array.from(AppState.selectedRunes);
-            if (runeIds.length === 0) return '';
-
-            // 룬 ID들을 콤마로 구분하여 압축
-            const encoded = runeIds.join(',');
-            return encodeURIComponent(encoded);
-        }
-
-        function decodeRunesFromURL() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const runesParam = urlParams.get('runes');
-
-            if (!runesParam) return new Set();
-
-            try {
-                const runeIds = decodeURIComponent(runesParam).split(',').filter(id => id.trim() !== '');
-                // 각 ID를 숫자로 변환 시도 (가상 룬은 문자열 그대로 유지)
-                const normalizedIds = runeIds.map(id => {
-                    const trimmedId = id.trim();
-                    return isNaN(trimmedId) ? trimmedId : Number(trimmedId);
-                });
-                return new Set(normalizedIds);
-            } catch (error) {
-                console.error('URL 파라미터 디코딩 오류:', error);
-                return new Set();
-            }
-        }
-
-        function generateShareLink() {
-            const encoded = encodeRunesToURL();
-            if (!encoded) {
-                alert('선택된 룬이 없습니다.');
-                return null;
-            }
-
-            const baseUrl = window.location.origin + window.location.pathname;
-            return `${baseUrl}?runes=${encoded}`;
-        }
-
-        function copyShareLink() {
-            const shareLink = generateShareLink();
-            if (!shareLink) return;
-
-            navigator.clipboard.writeText(shareLink).then(() => {
-                // 버튼 텍스트 임시 변경으로 피드백 제공
-                const btn = event.target;
-                const originalText = btn.innerHTML;
-                btn.innerHTML = '✅ 복사됨!';
-                btn.style.background = 'linear-gradient(135deg, #68d391 0%, #48bb78 100%)';
-
-                setTimeout(() => {
-                    btn.innerHTML = originalText;
-                    btn.style.background = '';
-                }, 2000);
-            }).catch(err => {
-                console.error('클립보드 복사 실패:', err);
-                // 폴백: 프롬프트로 표시
-                prompt('아래 링크를 복사하세요:', shareLink);
-            });
-        }
-
         // 초기화
         async function init() {
             try {
@@ -2720,26 +3094,13 @@
                 // 모든 룬 데이터 통합 (가상 룬 포함)
                 buildAllRunesArray();
 
-                // URL 파라미터에서 룬 정보 로드 시도
-                const runesFromURL = decodeRunesFromURL();
+                // URL 파라미터에서 룬 불러오기 시도
+                const loadedFromUrl = loadRunesFromUrl();
 
-                if (runesFromURL.size > 0) {
-                    // URL 파라미터가 있으면 그것을 사용
-                    AppState.selectedRunes = runesFromURL;
-                    // URL 파라미터로 로드된 경우 캐시에도 저장
-                    CacheManager.saveSelectedRunes(AppState.selectedRunes);
-                } else {
-                    // URL 파라미터가 없으면 저장된 선택 룬 불러오기
+                // URL에서 불러오지 않았다면 저장된 선택 룬 불러오기
+                if (!loadedFromUrl) {
                     AppState.selectedRunes = CacheManager.loadSelectedRunes();
-                }
-
-                renderUI();
-
-                // URL 파라미터로 룬이 로드되었으면 자동으로 추천 계산
-                if (runesFromURL.size > 0) {
-                    setTimeout(() => {
-                        calculateRecommendations();
-                    }, 500);
+                    renderUI();
                 }
             } catch (error) {
                 console.error('초기화 오류:', error);
