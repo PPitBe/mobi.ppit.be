@@ -2659,8 +2659,13 @@
             if (!runesParam) return new Set();
 
             try {
-                const runeIds = decodeURIComponent(runesParam).split(',');
-                return new Set(runeIds.filter(id => id.trim() !== ''));
+                const runeIds = decodeURIComponent(runesParam).split(',').filter(id => id.trim() !== '');
+                // 각 ID를 숫자로 변환 시도 (가상 룬은 문자열 그대로 유지)
+                const normalizedIds = runeIds.map(id => {
+                    const trimmedId = id.trim();
+                    return isNaN(trimmedId) ? trimmedId : Number(trimmedId);
+                });
+                return new Set(normalizedIds);
             } catch (error) {
                 console.error('URL 파라미터 디코딩 오류:', error);
                 return new Set();
