@@ -1370,7 +1370,7 @@
             });
 
             CacheManager.saveSelectedRunes(AppState.selectedRunes);
-            updateSelectedCount();
+            onSelectedRunesChanged();
 
             // 선택된 룬만 보기 모드일 때 필터 재적용
             if (AppState.showSelectedOnly) {
@@ -1382,7 +1382,74 @@
         function updateSelectedCount() {
             const countElement = document.getElementById('selectedCount');
             if (countElement) {
-                countElement.textContent = `선택된 룬: ${AppState.selectedRunes.size}개`;
+                // 선택된 룬을 고유 이름별로 그룹화 (중복 제거)
+                const uniqueSelectedRunes = new Map();
+                AppState.selectedRunes.forEach(runeId => {
+                    const runeInfo = AppState.allRunes.find(r => r.id === runeId);
+                    if (runeInfo) {
+                        const key = `${runeInfo.name}-${runeInfo.type}`;
+                        if (!uniqueSelectedRunes.has(key)) {
+                            uniqueSelectedRunes.set(key, runeInfo);
+                        }
+                    }
+                });
+
+                // MYTHIC 및 시즌룬 아님 개수 계산
+                let excludedCount = 0;
+                uniqueSelectedRunes.forEach(runeInfo => {
+                    const isVirtualRune = runeInfo.inStatsData === false;
+                    const isMatched = isRuneMatched(runeInfo.name, runeInfo.type);
+
+                    if (runeInfo.grade === 'MYTHIC' || (!isVirtualRune && runeInfo.grade === 'LEGEND' && !isMatched)) {
+                        excludedCount++;
+                    }
+                });
+
+                const totalCount = uniqueSelectedRunes.size;
+                const validCount = totalCount - excludedCount;
+
+                let displayText = `선택된 룬: ${totalCount}개`;
+                if (excludedCount > 0) {
+                    displayText += ` (이전시즌, 신화 제외: ${validCount}개)`;
+                }
+
+                // 전체 유효 룬 대비 선택된 유효 룬 비율 계산
+                if (validCount > 0) {
+                    const types = ['WEAPON', 'ARMOR', 'ACC', 'EMBLEM'];
+                    const typeData = ['weapons', 'armors', 'accessories', 'emblems'];
+                    let totalValidRunes = 0;
+                    let totalSelectedValidRunes = 0;
+
+                    types.forEach((type, index) => {
+                        const uniqueRunes = getUniqueRunes(AppState[typeData[index]], type);
+
+                        // 유효 룬만 필터링
+                        const validRunes = uniqueRunes.filter(r => {
+                            const isVirtualRune = r.inStatsData === false;
+                            const isMatched = isRuneMatched(r.name, r.type);
+                            return !(r.grade === 'MYTHIC' || (!isVirtualRune && r.grade === 'LEGEND' && !isMatched));
+                        });
+
+                        // 선택된 유효 룬 개수
+                        const selectedValidRunes = validRunes.filter(r => {
+                            if (r.inStatsData === false) {
+                                return AppState.selectedRunes.has(r.id);
+                            }
+                            const allRunes = AppState.allRunes.filter(ar => ar.name === r.name && ar.type === r.type);
+                            return allRunes.some(ar => AppState.selectedRunes.has(ar.id));
+                        });
+
+                        totalValidRunes += validRunes.length;
+                        totalSelectedValidRunes += selectedValidRunes.length;
+                    });
+
+                    if (totalValidRunes > 0) {
+                        const percentage = (totalSelectedValidRunes / totalValidRunes * 100).toFixed(1);
+                        displayText += ` - 획득율: ${percentage}%`;
+                    }
+                }
+
+                countElement.textContent = displayText;
             }
         }
 
@@ -1414,7 +1481,7 @@
             document.querySelectorAll('.rune-item.selected').forEach(el => {
                 el.classList.remove('selected');
             });
-            updateSelectedCount();
+            onSelectedRunesChanged();
             clearResults();
 
             // 선택된 룬만 보기 모드 해제
@@ -1517,7 +1584,7 @@
             }
 
             CacheManager.saveSelectedRunes(AppState.selectedRunes);
-            updateSelectedCount();
+            onSelectedRunesChanged();
             clearResults();
 
             // 선택된 룬만 보기가 활성화되어 있다면 필터 적용
@@ -2105,7 +2172,8 @@
             const allRuneItems = document.querySelectorAll('.rune-item');
 
             allRuneItems.forEach(item => {
-                const runeId = parseInt(item.dataset.runeId);
+                const runeIdStr = item.dataset.runeId;
+                const runeId = isNaN(runeIdStr) ? runeIdStr : parseInt(runeIdStr);
 
                 if (AppState.showSelectedOnly) {
                     if (AppState.selectedRunes.has(runeId)) {
@@ -2119,9 +2187,13 @@
             });
 
             // 섹션 제목 업데이트 (선택된 룬 개수 표시)
-            if (AppState.showSelectedOnly) {
-                updateSectionCounts();
-            }
+            updateSectionCounts();
+        }
+
+        // 선택된 룬이 변경될 때마다 모든 관련 UI 업데이트
+        function onSelectedRunesChanged() {
+            updateSelectedCount();
+            updateSectionCounts();
         }
 
         // 섹션별 선택된 룬 개수 업데이트
@@ -2135,23 +2207,36 @@
 
             document.querySelectorAll('.section-title').forEach((titleEl, index) => {
                 if (sections[index]) {
-                    // 중복 제거된 룬 개수
+                    // 중복 제거된 룬 개수 (가상 룬 포함)
                     const uniqueRunes = getUniqueRunes(sections[index].data, sections[index].type);
 
-                    // 선택된 고유 룬 이름 개수
-                    const selectedUniqueNames = new Set();
-                    sections[index].data.forEach(rune => {
-                        if (AppState.selectedRunes.has(rune.id)) {
-                            selectedUniqueNames.add(rune.name);
+                    // 선택된 룬 개수 계산 (renderUI와 동일한 방식)
+                    const selectedRunes = uniqueRunes.filter(rune => {
+                        // 가상 룬은 직접 ID로 확인
+                        if (rune.inStatsData === false) {
+                            return AppState.selectedRunes.has(rune.id);
                         }
+                        // 일반 룬은 같은 이름의 룬 중 하나라도 선택되어 있는지 확인
+                        const allRunes = AppState.allRunes.filter(r => r.name === rune.name && r.type === rune.type);
+                        return allRunes.some(r => AppState.selectedRunes.has(r.id));
                     });
-                    const selectedCount = selectedUniqueNames.size;
 
-                    if (AppState.showSelectedOnly) {
-                        titleEl.textContent = `${sections[index].title} (선택: ${selectedCount}개)`;
-                    } else {
-                        titleEl.textContent = `${sections[index].title} (${uniqueRunes.length}개)`;
-                    }
+                    // MYTHIC 및 시즌룬 아님 제외 개수 계산
+                    const selectedValid = selectedRunes.filter(r => {
+                        const isVirtualRune = r.inStatsData === false;
+                        const isMatched = isRuneMatched(r.name, r.type);
+                        // MYTHIC이거나 시즌룬 아님 제외
+                        return !(r.grade === 'MYTHIC' || (!isVirtualRune && r.grade === 'LEGEND' && !isMatched));
+                    }).length;
+
+                    const totalValid = uniqueRunes.filter(r => {
+                        const isVirtualRune = r.inStatsData === false;
+                        const isMatched = isRuneMatched(r.name, r.type);
+                        return !(r.grade === 'MYTHIC' || (!isVirtualRune && r.grade === 'LEGEND' && !isMatched));
+                    }).length;
+
+                    // 항상 "(선택됨 / 전체)" 포맷 사용 (유효 룬만)
+                    titleEl.textContent = `${sections[index].title} (${selectedValid} / ${totalValid})`;
                 }
             });
         }
@@ -2254,6 +2339,81 @@
             const uniqueAccessories = getUniqueRunes(AppState.accessories, 'ACC');
             const uniqueEmblems = getUniqueRunes(AppState.emblems, 'EMBLEM');
 
+            // 각 타입별 선택된 룬 개수 계산
+            const selectedWeaponsAll = uniqueWeapons.filter(w => {
+                // 가상 룬은 직접 ID로 확인
+                if (w.inStatsData === false) {
+                    return AppState.selectedRunes.has(w.id);
+                }
+                // 일반 룬은 같은 이름의 룬 중 하나라도 선택되어 있는지 확인
+                const allRunes = AppState.allRunes.filter(r => r.name === w.name && r.type === w.type);
+                return allRunes.some(r => AppState.selectedRunes.has(r.id));
+            });
+            const selectedWeapons = selectedWeaponsAll.filter(w => {
+                const isVirtualRune = w.inStatsData === false;
+                const isMatched = isRuneMatched(w.name, w.type);
+                return !(w.grade === 'MYTHIC' || (!isVirtualRune && w.grade === 'LEGEND' && !isMatched));
+            }).length;
+            const totalWeapons = uniqueWeapons.filter(w => {
+                const isVirtualRune = w.inStatsData === false;
+                const isMatched = isRuneMatched(w.name, w.type);
+                return !(w.grade === 'MYTHIC' || (!isVirtualRune && w.grade === 'LEGEND' && !isMatched));
+            }).length;
+
+            const selectedArmorsAll = uniqueArmors.filter(a => {
+                if (a.inStatsData === false) {
+                    return AppState.selectedRunes.has(a.id);
+                }
+                const allRunes = AppState.allRunes.filter(r => r.name === a.name && r.type === a.type);
+                return allRunes.some(r => AppState.selectedRunes.has(r.id));
+            });
+            const selectedArmors = selectedArmorsAll.filter(a => {
+                const isVirtualRune = a.inStatsData === false;
+                const isMatched = isRuneMatched(a.name, a.type);
+                return !(a.grade === 'MYTHIC' || (!isVirtualRune && a.grade === 'LEGEND' && !isMatched));
+            }).length;
+            const totalArmors = uniqueArmors.filter(a => {
+                const isVirtualRune = a.inStatsData === false;
+                const isMatched = isRuneMatched(a.name, a.type);
+                return !(a.grade === 'MYTHIC' || (!isVirtualRune && a.grade === 'LEGEND' && !isMatched));
+            }).length;
+
+            const selectedAccessoriesAll = uniqueAccessories.filter(a => {
+                if (a.inStatsData === false) {
+                    return AppState.selectedRunes.has(a.id);
+                }
+                const allRunes = AppState.allRunes.filter(r => r.name === a.name && r.type === a.type);
+                return allRunes.some(r => AppState.selectedRunes.has(r.id));
+            });
+            const selectedAccessories = selectedAccessoriesAll.filter(a => {
+                const isVirtualRune = a.inStatsData === false;
+                const isMatched = isRuneMatched(a.name, a.type);
+                return !(a.grade === 'MYTHIC' || (!isVirtualRune && a.grade === 'LEGEND' && !isMatched));
+            }).length;
+            const totalAccessories = uniqueAccessories.filter(a => {
+                const isVirtualRune = a.inStatsData === false;
+                const isMatched = isRuneMatched(a.name, a.type);
+                return !(a.grade === 'MYTHIC' || (!isVirtualRune && a.grade === 'LEGEND' && !isMatched));
+            }).length;
+
+            const selectedEmblemsAll = uniqueEmblems.filter(e => {
+                if (e.inStatsData === false) {
+                    return AppState.selectedRunes.has(e.id);
+                }
+                const allRunes = AppState.allRunes.filter(r => r.name === e.name && r.type === e.type);
+                return allRunes.some(r => AppState.selectedRunes.has(r.id));
+            });
+            const selectedEmblems = selectedEmblemsAll.filter(e => {
+                const isVirtualRune = e.inStatsData === false;
+                const isMatched = isRuneMatched(e.name, e.type);
+                return !(e.grade === 'MYTHIC' || (!isVirtualRune && e.grade === 'LEGEND' && !isMatched));
+            }).length;
+            const totalEmblems = uniqueEmblems.filter(e => {
+                const isVirtualRune = e.inStatsData === false;
+                const isMatched = isRuneMatched(e.name, e.type);
+                return !(e.grade === 'MYTHIC' || (!isVirtualRune && e.grade === 'LEGEND' && !isMatched));
+            }).length;
+
             const html = `
                 ${cacheInfo}
 
@@ -2297,7 +2457,7 @@
                 </div>
 
                 <div class="section">
-                    <h2 class="section-title">무기 룬 (${uniqueWeapons.length}개)</h2>
+                    <h2 class="section-title">무기 룬 (${selectedWeapons} / ${totalWeapons})</h2>
                     <div class="rune-grid">
                         ${uniqueWeapons.map(weapon => {
                             // 가상 룬인지 확인 (통계에 없는 인게임 룬)
@@ -2336,7 +2496,7 @@
                 </div>
 
                 <div class="section">
-                    <h2 class="section-title">방어구 룬 (${uniqueArmors.length}개)</h2>
+                    <h2 class="section-title">방어구 룬 (${selectedArmors} / ${totalArmors})</h2>
                     <div class="rune-grid">
                         ${uniqueArmors.map(armor => {
                             const isVirtualRune = armor.inStatsData === false;
@@ -2369,7 +2529,7 @@
                 </div>
 
                 <div class="section">
-                    <h2 class="section-title">장신구 룬 (${uniqueAccessories.length}개)</h2>
+                    <h2 class="section-title">장신구 룬 (${selectedAccessories} / ${totalAccessories})</h2>
                     <div class="rune-grid">
                         ${uniqueAccessories.map(accessory => {
                             const isVirtualRune = accessory.inStatsData === false;
@@ -2405,7 +2565,7 @@
                 </div>
 
                 <div class="section">
-                    <h2 class="section-title">앰블럼 룬 (${uniqueEmblems.length}개)</h2>
+                    <h2 class="section-title">앰블럼 룬 (${selectedEmblems} / ${totalEmblems})</h2>
                     <div class="rune-grid">
                         ${uniqueEmblems.map(emblem => {
                             const isVirtualRune = emblem.inStatsData === false;
@@ -2465,7 +2625,7 @@
             AppState.selectedRunes.forEach(runeId => {
                 updateRuneUI(runeId);
             });
-            updateSelectedCount();
+            onSelectedRunesChanged();
 
             // 프리셋 목록 렌더링
             renderPresetList();
