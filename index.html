@@ -4,15 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>모비삣비 - 마비노기 모바일 직업 추천 | 룬 기반 최적 직업 찾기</title>
-    <meta name="description" content="모비삣비(mobi.ppit.be) - 마비노기 모바일 룬을 선택하여 최적의 직업을 추천받으세요. 체단실 통계 데이터 기반 실시간 직업 추천 시스템. 무기, 방어구, 장신구, 앰블럼 룬 조합 분석.">
+    <meta name="description" content="모비삣비(mobi.ppit.be) - 마비노기 모바일 룬을 선택하여 최적의 직업을 추천받으세요. 체단실 통계 데이터 기반 실시간 직업 추천 시스템. 무기, 방어구, 장신구, 엠블럼 룬 조합 분석.">
     <meta name="keywords" content="모비삣비, 모비삐비, 마비노기 모바일, 직업 추천, 룬 추천, 마모, 체단실, 직업 선택, 룬 조합, 마비노기 가이드, mobi.ppit.be">
     <meta name="author" content="PPit">
     <meta name="robots" content="index, follow">
     <link rel="canonical" href="https://mobi.ppit.be/">
 
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="favicon.svg">
-    <link rel="alternate icon" href="favicon.ico">
+    <link rel="icon" type="image/svg+xml" href="https://mobi.ppit.be/favicon.svg">
+    <link rel="shortcut icon" type="image/svg+xml" href="https://mobi.ppit.be/favicon.svg">
+    <link rel="apple-touch-icon" href="https://mobi.ppit.be/favicon.svg">
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
@@ -26,6 +27,38 @@
     <meta name="twitter:url" content="https://mobi.ppit.be/">
     <meta name="twitter:title" content="모비삣비 - 마비노기 모바일 직업 추천">
     <meta name="twitter:description" content="모비삣비(mobi.ppit.be) - 마비노기 모바일 룬을 선택하여 최적의 직업을 추천받으세요. 체단실 통계 데이터 기반 실시간 직업 추천 시스템.">
+
+    <!-- Structured Data (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "모비삣비",
+        "alternateName": "mobi.ppit.be",
+        "url": "https://mobi.ppit.be/",
+        "description": "마비노기 모바일 룬을 선택하여 최적의 직업을 추천받으세요. 체단실 통계 데이터 기반 실시간 직업 추천 시스템.",
+        "applicationCategory": "GameApplication",
+        "operatingSystem": "Web Browser",
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "KRW"
+        },
+        "author": {
+            "@type": "Person",
+            "name": "PPit"
+        },
+        "publisher": {
+            "@type": "Organization",
+            "name": "모비삣비",
+            "url": "https://mobi.ppit.be/",
+            "logo": {
+                "@type": "ImageObject",
+                "url": "https://mobi.ppit.be/favicon.svg"
+            }
+        }
+    }
+    </script>
 
     <style>
         * {
@@ -1731,7 +1764,7 @@
                     });
                 });
 
-                // 매칭된 룬을 타입 순서로 정렬 (무기, 방어구, 장신구, 앰블럼)
+                // 매칭된 룬을 타입 순서로 정렬 (무기, 방어구, 장신구, 엠블럼)
                 const typeOrder = { 'WEAPON': 1, 'ARMOR': 2, 'ACC': 3, 'EMBLEM': 4 };
                 matchedRunes.sort((a, b) => {
                     if (typeOrder[a.type] !== typeOrder[b.type]) {
@@ -1744,7 +1777,7 @@
                 const averageRank = matchCount > 0 ?
                     matchedRunes.reduce((sum, rune) => sum + rune.rank, 0) / matchCount : 999;
 
-                // 해당 직업에서 자주 사용하는 룬 추출 (무기 1개, 방어구 6개, 장신구 3개, 앰블럼 1개)
+                // 해당 직업에서 자주 사용하는 룬 추출 (무기 1개, 방어구 6개, 장신구 3개, 엠블럼 1개)
                 const popularRunes = [];
                 jobStat.itemStatisticsByType.forEach(typeStats => {
                     const runeInfo = AppState.allRunes.find(r => r.id === typeStats.items[0]?.itemId);
@@ -2320,7 +2353,7 @@
             const typeMap = {
                 'WEAPON': '무기',
                 'ARMOR': '방어구',
-                'EMBLEM': '앰블럼',
+                'EMBLEM': '엠블럼',
                 'ACC': '장신구'
             };
 
@@ -2642,7 +2675,7 @@
                 { title: '무기 룬', data: AppState.weapons, type: 'WEAPON' },
                 { title: '방어구 룬', data: AppState.armors, type: 'ARMOR' },
                 { title: '장신구 룬', data: AppState.accessories, type: 'ACC' },
-                { title: '앰블럼 룬', data: AppState.emblems, type: 'EMBLEM' }
+                { title: '엠블럼 룬', data: AppState.emblems, type: 'EMBLEM' }
             ];
 
             document.querySelectorAll('.section-title').forEach((titleEl, index) => {
@@ -3005,7 +3038,7 @@
                 </div>
 
                 <div class="section">
-                    <h2 class="section-title">앰블럼 룬 (${selectedEmblems} / ${totalEmblems})</h2>
+                    <h2 class="section-title">엠블럼 룬 (${selectedEmblems} / ${totalEmblems})</h2>
                     <div class="rune-grid">
                         ${uniqueEmblems.map(emblem => {
                             const isVirtualRune = emblem.inStatsData === false;
