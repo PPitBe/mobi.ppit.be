@@ -2,6 +2,7 @@
 const API_CONFIG = {
     BASE_URL: 'https://api.m-inbody.info/api/v1',
     SEASON: 1,
+    VERSION: '1.0.1', // 신규 룬 추가 (폭군, 천체 정렬, 바람 화살, 무법자, 천공의 화로, 사냥꾼, 쐐기, 녹아내린 대지)
 
     // API 엔드포인트
     ENDPOINTS: {

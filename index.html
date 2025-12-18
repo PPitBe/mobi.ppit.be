@@ -1173,12 +1173,28 @@
             CACHE_KEY: 'runeRecommendationCache',
             SELECTED_RUNES_KEY: 'selectedRunes',
             PRESETS_KEY: 'runePresets',
+            VERSION_KEY: 'appVersion',
             CACHE_DURATION: 24 * 60 * 60 * 1000, // 24시간
+
+            checkVersion() {
+                const savedVersion = localStorage.getItem(this.VERSION_KEY);
+                const currentVersion = API_CONFIG.VERSION;
+
+                if (savedVersion !== currentVersion) {
+                    console.log(`버전 업데이트 감지: ${savedVersion} -> ${currentVersion}`);
+                    // 버전이 다르면 캐시 초기화
+                    this.clearCache();
+                    localStorage.setItem(this.VERSION_KEY, currentVersion);
+                    return true; // 버전 업데이트됨
+                }
+                return false; // 동일 버전
+            },
 
             saveCache(data) {
                 const cacheData = {
                     timestamp: Date.now(),
-                    data: data
+                    data: data,
+                    version: API_CONFIG.VERSION
                 };
                 localStorage.setItem(this.CACHE_KEY, JSON.stringify(cacheData));
             },
@@ -3115,6 +3131,9 @@
         // 초기화
         async function init() {
             try {
+                // 버전 체크 및 캐시 초기화
+                CacheManager.checkVersion();
+
                 const data = await loadAllData();
 
                 AppState.classes = data.classes || [];
