@@ -12,14 +12,17 @@
 
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="https://mobi.ppit.be/favicon.svg">
-    <link rel="shortcut icon" type="image/svg+xml" href="https://mobi.ppit.be/favicon.svg">
-    <link rel="apple-touch-icon" href="https://mobi.ppit.be/favicon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="https://mobi.ppit.be/favicon.svg">
+    <link rel="icon" type="image/png" sizes="16x16" href="https://mobi.ppit.be/favicon.svg">
+    <link rel="shortcut icon" href="https://mobi.ppit.be/favicon.svg">
+    <link rel="apple-touch-icon" sizes="180x180" href="https://mobi.ppit.be/favicon.svg">
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://mobi.ppit.be/">
     <meta property="og:title" content="모비삣비 - 마비노기 모바일 직업 추천">
     <meta property="og:description" content="모비삣비(mobi.ppit.be) - 마비노기 모바일 룬을 선택하여 최적의 직업을 추천받으세요. 체단실 통계 데이터 기반 실시간 직업 추천 시스템.">
+    <meta property="og:image" content="https://mobi.ppit.be/favicon.svg">
     <meta property="og:site_name" content="모비삣비">
 
     <!-- Twitter -->
@@ -27,6 +30,7 @@
     <meta name="twitter:url" content="https://mobi.ppit.be/">
     <meta name="twitter:title" content="모비삣비 - 마비노기 모바일 직업 추천">
     <meta name="twitter:description" content="모비삣비(mobi.ppit.be) - 마비노기 모바일 룬을 선택하여 최적의 직업을 추천받으세요. 체단실 통계 데이터 기반 실시간 직업 추천 시스템.">
+    <meta name="twitter:image" content="https://mobi.ppit.be/favicon.svg">
 
     <!-- Structured Data (JSON-LD) -->
     <script type="application/ld+json">
@@ -1493,7 +1497,9 @@
                     });
 
                     if (totalValidRunes > 0) {
-                        const percentage = (totalSelectedValidRunes / totalValidRunes * 100).toFixed(1);
+                        // 인게임과 동일한 올림: 소수점 둘째 자리에서 올림 후 첫째 자리까지 표시
+                        const rawPercentage = totalSelectedValidRunes / totalValidRunes * 100;
+                        const percentage = (Math.ceil(rawPercentage * 10) / 10).toFixed(1);
                         displayText += ` - 획득율: ${percentage}%`;
                     }
                 }
@@ -2820,7 +2826,7 @@
                 Math.floor((Date.now() - AppState.cacheTimestamp) / 1000 / 60) : 0;
 
             const cacheInfo = AppState.cacheTimestamp ?
-                `<div class="cache-info">캐시된 데이터 사용 중 (${cacheAge}분 전 저장됨) | <a href="#" onclick="event.preventDefault(); refreshData();">새로고침</a></div>` : '';
+                `<div class="cache-info">캐시된 체단실 데이터 사용 중 (${cacheAge}분 전 저장됨) | <a href="#" onclick="event.preventDefault(); refreshData();">새로고침</a></div>` : '';
 
             // 각 타입별로 중복 제거
             const uniqueWeapons = getUniqueRunes(AppState.weapons, 'WEAPON');
@@ -3122,7 +3128,19 @@
 
         // 데이터 새로고침
         async function refreshData() {
-            if (confirm('캐시를 지우고 새로운 데이터를 불러오시겠습니까?')) {
+            // 캐시 저장 시간 확인 (1분 = 60000ms)
+            if (AppState.cacheTimestamp) {
+                const elapsedTime = Date.now() - AppState.cacheTimestamp;
+                const remainingTime = 60000 - elapsedTime;
+
+                if (remainingTime > 0) {
+                    const remainingSeconds = Math.ceil(remainingTime / 1000);
+                    alert(`새로고침은 캐시 저장 후 1분이 지나야 가능합니다.\n남은 시간: ${remainingSeconds}초`);
+                    return;
+                }
+            }
+
+            if (confirm('캐시를 지우고 새로운 체단실 데이터를 불러오시겠습니까?')) {
                 CacheManager.clearCache();
                 location.reload();
             }
